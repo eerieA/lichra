@@ -55,7 +55,8 @@ src/
 - Collapsible folder tree; folders are first-class entities with `id`/`name`/`parentId` (adjacency list)
 - Flat note list per folder, sorted by `updatedAt` desc
 - Create note in the currently selected folder; create named subfolders
-- Delete note with confirmation dialog; delete folder recursively removes all descendants
+- Delete note with confirmation dialog
+- Delete folder with confirmation via hover button (recursively removes all descendant folders and notes)
 - Rename note by double-clicking (inline input, Enter/Escape/blur to commit); rename folder is O(1)
 - First open with no notes: sidebar is empty, editor is blank
 

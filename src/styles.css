@@ -98,7 +98,28 @@ body {
 }
 
 .folder-name {
+  flex: 1;
   font-weight: 500;
+}
+
+.folder-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.folder-delete:hover {
+  color: #e07070;
+}
+
+.folder-label:hover .folder-delete {
+  opacity: 1;
 }
 
 .note-item {

@@ -49,6 +49,18 @@ const FolderNode: Component<NodeProps> = (props) => {
       >
         <span class="folder-caret">{open() ? '▾' : '▸'}</span>
         <span class="folder-name">{props.label}</span>
+        <Show when={props.folderId !== null}>
+          <button
+            class="folder-delete"
+            title="Delete folder"
+            onClick={(e) => {
+              e.stopPropagation()
+              if (confirm(`Delete folder "${props.label}" and all its contents?`)) {
+                props.store.deleteFolder(props.folderId!)
+              }
+            }}
+          >×</button>
+        </Show>
       </div>
 
       <Show when={open()}>

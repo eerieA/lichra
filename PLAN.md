@@ -59,9 +59,11 @@ All persistence goes through:
 
 ```ts
 interface StorageAdapter {
-  loadAll(): Promise<Note[]>
-  save(note: Note): Promise<void>
-  delete(id: string): Promise<void>
+  loadAll(): Promise<{ notes: Note[]; folders: Folder[] }>
+  saveNote(note: Note): Promise<void>
+  deleteNote(id: string): Promise<void>
+  saveFolder(folder: Folder): Promise<void>
+  deleteFolder(id: string): Promise<void>
 }
 ```
 
@@ -214,6 +216,7 @@ A usable daily tool: notes survive reload, organized in folders, searchable by t
 - Flat note list within each folder, sorted by `updatedAt` desc
 - Create note in the currently selected folder
 - Delete note with confirmation
+- Delete folder with confirmation (recursively removes all descendant folders and notes)
 - Rename note = edit title inline
 - First keystroke in empty state creates a new untitled note in root
 
@@ -222,15 +225,15 @@ A usable daily tool: notes survive reload, organized in folders, searchable by t
 - Single search input at top of sidebar
 - Filters note list in real time by title substring (case-insensitive)
 - Scope: titles only, no full-text
-- No separate index — `notes.filter()` over the in-memory array on each keystroke
+- Backed by `titleIndex: Map<lowerTitle, Note>` — maintained incrementally, no full scan on keystroke
 - Search results shown flat (no folder grouping) when a query is active
 
 #### 2d — Wikilink resolution across folders
 
 - `[[Note Title]]` resolves by title match across all folders (case-insensitive)
-- Resolution happens at click time by scanning the in-memory `Note[]` — no stored index
+- Resolution is O(1) via `titleIndex` — no scan of `Note[]` at click time
 - Missing links render with a dashed underline and muted color
-- Clicking a resolved link navigates to that note and expands its folder in the sidebar
+- Clicking a resolved link navigates to that note
 
 #### 2e — Mermaid rendering
 
@@ -270,23 +273,32 @@ A usable daily tool: notes survive reload, organized in folders, searchable by t
 
 ### Goal
 
-Offline-first
+Make Lichra a true offline-first app that users can install and rely on without a network connection. The user should never need to think about connectivity. This also makes Lichra installable as a standalone app on desktop and mobile without requiring a native build.
 
 ### Deliverables
 
-* manifest
-* service worker
+* Web app manifest (name, icons, display mode, theme color)
+* Service worker with cache-first strategy for the app shell
+* Install prompt handled gracefully (browser-native, no custom UI needed for v1)
 
-### Caching strategy (tightened)
+### Caching strategy
 
-App shell → cache-first  
-Dynamic data → never cached (IndexedDB only)
+App shell (HTML, JS, CSS assets) → cache-first via service worker  
+Note data → never cached by service worker; IndexedDB is the sole store  
+Rationale: caching note content in the service worker would create a second source of truth, violating invariant (1)
+
+### Constraints
+
+* Service worker must not intercept or cache IndexedDB reads/writes
+* No background sync — writes happen synchronously to IndexedDB in the foreground session only
+* App shell cache is versioned; old cache is evicted on each new deploy
 
 ### Done when
 
-* App loads and works fully with network disabled
-* Browser shows "installable" prompt
-* Existing notes still accessible after offline reload
+* App loads and works fully with network disabled after first visit
+* Browser shows "installable" prompt on supported platforms
+* Existing notes remain accessible after offline reload
+* No regressions in editor latency or note persistence
 
 ---
 
@@ -334,6 +346,8 @@ Parsing must not run more than **10 times/sec**
 Preview rendering must be **interruptible**
 (latest input cancels previous render)
 
+For v1, debounce cancellation is sufficient. Beyond v1, the correct path is a Web Worker renderer so that parsing never blocks the main thread at all.
+
 ## Rule 3
 
 Large note safety (basic)
@@ -348,13 +362,13 @@ If > 50KB → increase debounce automatically
 
 1. Reduces friction in writing
 2. Improves navigation between notes
-3. Does not introduce new data structures
+3. Does not introduce new data structures without a clear performance or UX justification
 
 If it introduces:
 
 * new index
 * new graph
-* new abstraction layer
+* new big abstraction layer
 
 → **reject for first version**
 
@@ -368,6 +382,7 @@ We are done when:
 
   * open app offline
   * write notes instantly
+  * create and navigate folders
   * link notes and navigate
 * No noticeable lag on typical notes (<10KB)
 
