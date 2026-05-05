@@ -1,0 +1,326 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+}
+
+/* ── Layout ── */
+
+.workspace {
+  display: flex;
+  height: 100%;
+}
+
+/* ── Sidebar ── */
+
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  background: #161616;
+  border-right: 1px solid #2a2a2a;
+  overflow: hidden;
+}
+
+.sidebar-search {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.sidebar-search input {
+  width: 100%;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+}
+
+.sidebar-search input:focus {
+  border-color: #555;
+}
+
+.folder-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.folder-node {
+  padding-left: calc(var(--depth, 0) * 12px);
+}
+
+.folder-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: #999;
+  cursor: pointer;
+  user-select: none;
+}
+
+.folder-label:hover {
+  background: #1e1e1e;
+  color: #ccc;
+}
+
+.folder-label.selected {
+  color: #ddd;
+  background: #222;
+}
+
+.folder-caret {
+  font-size: 0.7rem;
+  width: 10px;
+}
+
+.folder-name {
+  font-weight: 500;
+}
+
+.note-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.5rem 0.2rem 1.4rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  user-select: none;
+  color: #bbb;
+  border-radius: 3px;
+  margin: 0 2px;
+}
+
+.note-item:hover {
+  background: #222;
+  color: #e0e0e0;
+}
+
+.note-item.active {
+  background: #2a3a4a;
+  color: #7cb9e8;
+}
+
+.note-item:hover .note-delete {
+  opacity: 1;
+}
+
+.note-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-folder-badge {
+  font-size: 0.7rem;
+  color: #555;
+  margin-left: 0.4rem;
+  white-space: nowrap;
+}
+
+.note-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.note-delete:hover {
+  color: #e07070;
+}
+
+.note-rename-input {
+  flex: 1;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 3px;
+  color: #e0e0e0;
+  font-size: 0.82rem;
+  padding: 0.1rem 0.3rem;
+  outline: none;
+  width: 100%;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-top: 1px solid #2a2a2a;
+}
+
+.sidebar-actions button {
+  flex: 1;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 0.3rem 0;
+}
+
+.sidebar-actions button:hover {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.new-folder-input {
+  padding: 0.4rem 0.5rem;
+  border-top: 1px solid #2a2a2a;
+}
+
+.new-folder-input input {
+  width: 100%;
+  background: #222;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.4rem;
+  outline: none;
+}
+
+.search-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+/* ── Editor ── */
+
+.editor {
+  flex: 1;
+  padding: 1.5rem;
+  background: #1e1e1e;
+  color: #e0e0e0;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  border: none;
+  border-right: 1px solid #2e2e2e;
+  resize: none;
+  outline: none;
+}
+
+/* ── Preview ── */
+
+.preview {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.preview h1,
+.preview h2,
+.preview h3,
+.preview h4 {
+  margin: 1.2em 0 0.4em;
+  line-height: 1.3;
+  color: #f0f0f0;
+}
+
+.preview p {
+  margin-bottom: 0.8em;
+}
+
+.preview code {
+  background: #2a2a2a;
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  font-size: 0.88em;
+}
+
+.preview pre {
+  background: #2a2a2a;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+
+.preview pre code {
+  background: none;
+  padding: 0;
+}
+
+.preview blockquote {
+  border-left: 3px solid #444;
+  padding-left: 1rem;
+  color: #999;
+  margin: 0.8em 0;
+}
+
+.preview ul,
+.preview ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.8em;
+}
+
+/* ── Wikilinks ── */
+
+.wikilink {
+  color: #7cb9e8;
+  text-decoration: none;
+  border-bottom: 1px solid #7cb9e8;
+  cursor: pointer;
+}
+
+.wikilink:hover {
+  color: #a8d4f5;
+  border-bottom-color: #a8d4f5;
+}
+
+.wikilink--missing {
+  color: #888;
+  border-bottom: 1px dashed #666;
+}
+
+.wikilink--missing:hover {
+  color: #aaa;
+  border-bottom-color: #888;
+}
+
+/* ── Mermaid ── */
+
+.mermaid-diagram {
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.mermaid-error {
+  border: 1px dashed #c0392b;
+  padding: 0.5rem;
+  color: #e07070;
+  font-size: 0.85rem;
+}
