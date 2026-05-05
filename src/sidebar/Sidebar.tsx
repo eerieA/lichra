@@ -1,17 +1,32 @@
-import { Component, createSignal, For, Show } from 'solid-js'
+import { Component, createSignal, For, onMount, Show } from 'solid-js'
 import type { NotesStore } from '../lib/notes'
 import FolderTree from './FolderTree'
 
 interface Props {
   store: NotesStore
+  onRegisterNavigate: (fn: (id: string) => void) => void
+}
+
+function getAncestorIds(folderId: string | null, store: NotesStore): string[] {
+  const ids: string[] = []
+  let id = folderId
+  while (id !== null) {
+    ids.push(id)
+    const f = store.getFolderById(id)
+    id = f?.parentId ?? null
+  }
+  return ids
 }
 
 const Sidebar: Component<Props> = (props) => {
   const [query, setQuery] = createSignal('')
-  // null = root
   const [selectedFolderId, setSelectedFolderId] = createSignal<string | null>(null)
   const [newFolder, setNewFolder] = createSignal(false)
   const [folderDraft, setFolderDraft] = createSignal('')
+  const [openFolderIds, setOpenFolderIds] = createSignal<Set<string>>(new Set())
+
+  const noteRefs = new Map<string, HTMLElement>()
+  let treeScrollRef!: HTMLDivElement
 
   const isSearching = () => query().trim().length > 0
 
@@ -34,9 +49,42 @@ const Sidebar: Component<Props> = (props) => {
     return '/' + parts.join('/')
   }
 
+  // Single entry point for all note navigation
+  function navigateToNote(id: string) {
+    props.store.setCurrentId(id)
+    const note = props.store.notes.find((n) => n.id === id)
+    if (!note) return
+    // Expand all ancestors
+    const ancestors = getAncestorIds(note.folderId, props.store)
+    if (ancestors.length > 0) {
+      setOpenFolderIds((prev) => {
+        const next = new Set(prev)
+        for (const aid of ancestors) next.add(aid)
+        return next
+      })
+    }
+    // Scroll after DOM settles
+    setTimeout(() => {
+      noteRefs.get(id)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }, 0)
+  }
+
+  // Register with App so wikilink clicks can call navigateToNote
+  onMount(() => props.onRegisterNavigate(navigateToNote))
+
+  function handleToggleFolder(folderId: string | null) {
+    if (folderId === null) return
+    setOpenFolderIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(folderId)) next.delete(folderId)
+      else next.add(folderId)
+      return next
+    })
+  }
+
   function handleNewNote() {
     const note = props.store.createNote(selectedFolderId())
-    props.store.setCurrentId(note.id)
+    navigateToNote(note.id)
   }
 
   function handleNewFolder() {
@@ -49,6 +97,7 @@ const Sidebar: Component<Props> = (props) => {
     if (name) {
       const folder = props.store.createFolder(name, selectedFolderId())
       setSelectedFolderId(folder.id)
+      setOpenFolderIds((prev) => new Set([...prev, folder.id]))
     }
     setNewFolder(false)
   }
@@ -81,11 +130,17 @@ const Sidebar: Component<Props> = (props) => {
       </Show>
 
       <Show when={!isSearching()}>
-        <FolderTree
-          store={props.store}
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={setSelectedFolderId}
-        />
+        <div class="folder-tree-scroll" ref={treeScrollRef}>
+          <FolderTree
+            store={props.store}
+            selectedFolderId={selectedFolderId}
+            onSelectFolder={setSelectedFolderId}
+            openFolderIds={openFolderIds}
+            onToggleFolder={handleToggleFolder}
+            onNavigateNote={navigateToNote}
+            noteRefs={noteRefs}
+          />
+        </div>
       </Show>
 
       <div class="sidebar-actions">

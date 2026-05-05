@@ -84,6 +84,13 @@ src/
 - Detects `<code class="language-mermaid">` blocks in rendered HTML and replaces with SVG
 - Errors shown with a dashed red border
 
+#### 2g — Unified note navigation with sidebar expansion and scroll
+- All note navigation (wikilink clicks, sidebar note clicks, new note creation) goes through a single `navigateToNote(id)` in `Sidebar`
+- On navigation: sets current note, expands all ancestor folders, scrolls sidebar to the note item
+- Open folder state is `openFolderIds: Signal<Set<string>>` in `Sidebar` — multiple folders stay open simultaneously; navigation only adds to the set
+- `App` registers `navigateToNote` via `onRegisterNavigate` prop so wikilink clicks in the preview can trigger the same function
+- `FolderNode.open` local signal removed; open state now derived from `openFolderIds` set
+
 ### New files
 
 ```

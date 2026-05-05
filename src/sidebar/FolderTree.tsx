@@ -5,6 +5,10 @@ interface Props {
   store: NotesStore
   selectedFolderId: () => string | null
   onSelectFolder: (id: string | null) => void
+  openFolderIds: () => Set<string>
+  onToggleFolder: (id: string | null) => void
+  onNavigateNote: (id: string) => void
+  noteRefs: Map<string, HTMLElement>
 }
 
 const FolderTree: Component<Props> = (props) => {
@@ -17,6 +21,10 @@ const FolderTree: Component<Props> = (props) => {
         depth={0}
         selectedFolderId={props.selectedFolderId}
         onSelectFolder={props.onSelectFolder}
+        openFolderIds={props.openFolderIds}
+        onToggleFolder={props.onToggleFolder}
+        onNavigateNote={props.onNavigateNote}
+        noteRefs={props.noteRefs}
       />
     </div>
   )
@@ -29,10 +37,15 @@ interface NodeProps {
   depth: number
   selectedFolderId: () => string | null
   onSelectFolder: (id: string | null) => void
+  openFolderIds: () => Set<string>
+  onToggleFolder: (id: string | null) => void
+  onNavigateNote: (id: string) => void
+  noteRefs: Map<string, HTMLElement>
 }
 
 const FolderNode: Component<NodeProps> = (props) => {
-  const [open, setOpen] = createSignal(true)
+  const isOpen = () =>
+    props.folderId === null || props.openFolderIds().has(props.folderId)
 
   const subfolders = () => props.store.getChildFolders(props.folderId)
   const notes = () => props.store.getNotesInFolder(props.folderId)
@@ -44,10 +57,10 @@ const FolderNode: Component<NodeProps> = (props) => {
         class={`folder-label${isSelected() ? ' selected' : ''}`}
         onClick={() => {
           props.onSelectFolder(props.folderId)
-          setOpen((o) => !o)
+          props.onToggleFolder(props.folderId)
         }}
       >
-        <span class="folder-caret">{open() ? '▾' : '▸'}</span>
+        <span class="folder-caret">{isOpen() ? '▾' : '▸'}</span>
         <span class="folder-name">{props.label}</span>
         <Show when={props.folderId !== null}>
           <button
@@ -63,9 +76,16 @@ const FolderNode: Component<NodeProps> = (props) => {
         </Show>
       </div>
 
-      <Show when={open()}>
+      <Show when={isOpen()}>
         <For each={notes()}>
-          {(note) => <NoteItem note={note} store={props.store} />}
+          {(note) => (
+            <NoteItem
+              note={note}
+              store={props.store}
+              onNavigate={props.onNavigateNote}
+              noteRefs={props.noteRefs}
+            />
+          )}
         </For>
         <For each={subfolders()}>
           {(folder) => (
@@ -76,6 +96,10 @@ const FolderNode: Component<NodeProps> = (props) => {
               depth={props.depth + 1}
               selectedFolderId={props.selectedFolderId}
               onSelectFolder={props.onSelectFolder}
+              openFolderIds={props.openFolderIds}
+              onToggleFolder={props.onToggleFolder}
+              onNavigateNote={props.onNavigateNote}
+              noteRefs={props.noteRefs}
             />
           )}
         </For>
@@ -87,6 +111,8 @@ const FolderNode: Component<NodeProps> = (props) => {
 interface NoteItemProps {
   note: Note
   store: NotesStore
+  onNavigate: (id: string) => void
+  noteRefs: Map<string, HTMLElement>
 }
 
 const NoteItem: Component<NoteItemProps> = (props) => {
@@ -114,7 +140,8 @@ const NoteItem: Component<NoteItemProps> = (props) => {
   return (
     <div
       class={`note-item${isActive() ? ' active' : ''}`}
-      onClick={() => props.store.setCurrentId(props.note.id)}
+      ref={(el) => props.noteRefs.set(props.note.id, el)}
+      onClick={() => props.onNavigate(props.note.id)}
       onDblClick={startRename}
     >
       <Show

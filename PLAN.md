@@ -155,6 +155,16 @@ titleIndex:   Map<lowerTitle, Note>     // O(1) wikilink resolution
 
 ---
 
+## Known limitation: duplicate titles (v1)
+
+`titleIndex` maps lowercase title → note. If two notes share the same title, the second one silently overwrites the first in the index — wikilink resolution becomes non-deterministic.
+
+**v1 mitigation:** warn the user inline when creating or renaming a note to a title that already exists (see Phase 4). This prevents the ambiguity at entry time.
+
+**v2 path:** enforce globally unique titles as a hard constraint, or switch wikilinks to resolve by ID with a title alias — eliminating the ambiguity entirely.
+
+---
+
 ## Rendering contract
 
 ```html
@@ -195,7 +205,7 @@ Single-note, zero-lag editing
 
 ---
 
-## Phase 2 - Persistence + Multi-note (Soon)
+## Phase 2 - Persistence + Multi-note (Done)
 
 ### Goal
 
@@ -257,11 +267,24 @@ A usable daily tool: notes survive reload, organized in folders, searchable by t
 
 ---
 
+#### 2g — Unified note navigation with sidebar expansion and scroll
+
+All note navigation (wikilink clicks, sidebar note clicks) goes through a single `navigateToNote(id)` function that:
+
+- Sets the current note
+- Expands all ancestor folders of that note in the sidebar (adds their IDs to `openFolderIds: Set<string>`)
+- Scrolls the sidebar to make the note item visible
+
+Open folder state is a `Set<string>` held in `Sidebar` — multiple folders can be open simultaneously at any depth. `navigateToNote` only ever adds to the set; existing open folders are unaffected.
+
+---
+
 ### Done when
 
 - Notes and folders survive a page reload
 - Can create, rename, and delete notes; folders appear and disappear implicitly
 - Sidebar shows a collapsible folder tree; clicking a note opens it
+- Navigating to a note (via wikilink or sidebar click) expands its ancestor folders and scrolls the sidebar to it
 - Title search filters the list in real time
 - `[[Note Title]]` navigates to the correct note regardless of its folder
 - Mermaid fenced blocks render as diagrams
@@ -309,6 +332,23 @@ Rationale: caching note content in the service worker would create a second sour
 * readability (spacing, typography)
 * small UX fixes
 * minimal shortcuts
+
+#### Planned: duplicate title warning
+
+When a user creates or renames a note to a title that already exists (case-insensitive), show an inline warning in the rename input. Do not block the save — just make the ambiguity visible so the user can resolve it.
+
+This directly addresses the known `titleIndex` limitation in section 5.
+
+#### Planned: search-result navigation to tree view (v2)
+
+When a user finds a note via search and wants to see it in context, a secondary interaction (e.g. double-click, dedicated button, or context menu on the search result item) should:
+
+- Clear the search query
+- Switch back to the folder tree view
+- Expand the note's ancestor folders
+- Scroll the sidebar to the note's position
+
+This builds directly on `navigateToNote` from 2g — the logic is identical, only the trigger is new. The specific gesture (double-click vs. button vs. context menu) is a UX decision deferred to v2. Implement `navigateToNote` in 2g such that calling it from any event handler is sufficient.
 
 ---
 
