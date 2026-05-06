@@ -292,40 +292,7 @@ Open folder state is a `Set<string>` held in `Sidebar` — multiple folders can 
 
 ---
 
-## Phase 3 - PWA (Not started)
-
-### Goal
-
-Make Lichra a true offline-first app that users can install and rely on without a network connection. The user should never need to think about connectivity. This also makes Lichra installable as a standalone app on desktop and mobile without requiring a native build.
-
-### Deliverables
-
-* Web app manifest (name, icons, display mode, theme color)
-* Service worker with cache-first strategy for the app shell
-* Install prompt handled gracefully (browser-native, no custom UI needed for v1)
-
-### Caching strategy
-
-App shell (HTML, JS, CSS assets) → cache-first via service worker  
-Note data → never cached by service worker; IndexedDB is the sole store  
-Rationale: caching note content in the service worker would create a second source of truth, violating invariant (1)
-
-### Constraints
-
-* Service worker must not intercept or cache IndexedDB reads/writes
-* No background sync — writes happen synchronously to IndexedDB in the foreground session only
-* App shell cache is versioned; old cache is evicted on each new deploy
-
-### Done when
-
-* App loads and works fully with network disabled after first visit
-* Browser shows "installable" prompt on supported platforms
-* Existing notes remain accessible after offline reload
-* No regressions in editor latency or note persistence
-
----
-
-## Phase 4 - Polish (Not started)
+## Phase 3 - Polish (Done)
 
 ### Allowed improvements only:
 
@@ -365,7 +332,7 @@ This builds directly on `navigateToNote` from 2g — the logic is identical, onl
 
 ---
 
-## Phase 5 - Desktop (optional)
+## Phase 4 - Desktop
 
 Using Tauri
 

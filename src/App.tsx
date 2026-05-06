@@ -62,13 +62,33 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
     if (found) sidebarNavigate?.(found.id)
   }
 
+  function breadcrumb(): string {
+    const note = store.currentNote()
+    if (!note) return ''
+    const parts: string[] = []
+    let id = note.folderId
+    while (id !== null) {
+      const f = store.getFolderById(id)
+      if (!f) break
+      parts.unshift(f.name)
+      id = f.parentId
+    }
+    const path = parts.length > 0 ? '/' + parts.join('/') + '/' : '/'
+    return path
+  }
+
   return (
     <div class="workspace">
       <Sidebar
         store={store}
         onRegisterNavigate={(fn) => { sidebarNavigate = fn }}
       />
-      <Editor value={store.currentNote()?.content ?? ''} onInput={handleInput} />
+      <div class="editor-pane">
+        <div class="editor-breadcrumb">
+          {breadcrumb()}<span class="breadcrumb-title">{store.currentNote()?.title ?? ''}</span>
+        </div>
+        <Editor value={store.currentNote()?.content ?? ''} onInput={handleInput} />
+      </div>
       <Preview html={html()} onClick={handlePreviewClick} />
     </div>
   )

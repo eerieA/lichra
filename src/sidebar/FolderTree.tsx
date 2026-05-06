@@ -1,4 +1,4 @@
-import { Component, createSignal, For, Show } from 'solid-js'
+import { Component, createSignal, For, Show, createMemo } from 'solid-js'
 import type { Note, Folder, NotesStore } from '../lib/notes'
 
 interface Props {
@@ -63,16 +63,7 @@ const FolderNode: Component<NodeProps> = (props) => {
         <span class="folder-caret">{isOpen() ? '▾' : '▸'}</span>
         <span class="folder-name">{props.label}</span>
         <Show when={props.folderId !== null}>
-          <button
-            class="folder-delete"
-            title="Delete folder"
-            onClick={(e) => {
-              e.stopPropagation()
-              if (confirm(`Delete folder "${props.label}" and all its contents?`)) {
-                props.store.deleteFolder(props.folderId!)
-              }
-            }}
-          >×</button>
+          <FolderDeleteButton label={props.label} onConfirm={() => props.store.deleteFolder(props.folderId!)} />
         </Show>
       </div>
 
@@ -121,6 +112,14 @@ const NoteItem: Component<NoteItemProps> = (props) => {
 
   const isActive = () => props.store.currentId() === props.note.id
 
+  const isDuplicateTitle = createMemo(() => {
+    const d = draft().trim().toLowerCase()
+    if (!d || d === props.note.title.toLowerCase()) return false
+    return props.store.notes.some(
+      (n) => n.id !== props.note.id && n.title.toLowerCase() === d
+    )
+  })
+
   function startRename() {
     setDraft(props.note.title)
     setEditing(true)
@@ -130,11 +129,6 @@ const NoteItem: Component<NoteItemProps> = (props) => {
     const t = draft().trim()
     if (t && t !== props.note.title) props.store.renameNote(props.note.id, t)
     setEditing(false)
-  }
-
-  function handleDelete(e: MouseEvent) {
-    e.stopPropagation()
-    if (confirm(`Delete "${props.note.title}"?`)) props.store.deleteNote(props.note.id)
   }
 
   return (
@@ -149,23 +143,85 @@ const NoteItem: Component<NoteItemProps> = (props) => {
         fallback={
           <>
             <span class="note-title">{props.note.title}</span>
-            <button class="note-delete" onClick={handleDelete} title="Delete">×</button>
+            <NoteDeleteButton title={props.note.title} onConfirm={() => props.store.deleteNote(props.note.id)} />
           </>
         }
       >
-        <input
-          class="note-rename-input"
-          value={draft()}
-          onInput={(e) => setDraft(e.currentTarget.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitRename()
-            if (e.key === 'Escape') setEditing(false)
-          }}
-          ref={(el) => setTimeout(() => el.focus(), 0)}
-        />
+        <div style={{ display: 'flex', 'flex-direction': 'column', flex: '1', 'min-width': '0' }}>
+          <input
+            class="note-rename-input"
+            value={draft()}
+            onInput={(e) => setDraft(e.currentTarget.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename()
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            ref={(el) => setTimeout(() => el.focus(), 0)}
+          />
+          <Show when={isDuplicateTitle()}>
+            <span class="note-rename-warning">Title already exists — wikilinks may be ambiguous</span>
+          </Show>
+        </div>
       </Show>
     </div>
+  )
+}
+
+interface DeleteButtonProps {
+  onConfirm: () => void
+}
+
+const NoteDeleteButton: Component<DeleteButtonProps & { title: string }> = (props) => {
+  const [confirming, setConfirming] = createSignal(false)
+
+  function handleClick(e: MouseEvent) {
+    e.stopPropagation()
+    if (confirming()) {
+      props.onConfirm()
+    } else {
+      setConfirming(true)
+    }
+  }
+
+  return (
+    <button
+      class={`note-delete${confirming() ? ' confirming' : ''}`}
+      title={confirming() ? 'Click again to confirm' : `Delete "${props.title}"`}
+      onClick={handleClick}
+      onMouseLeave={() => setConfirming(false)}
+    >
+      {confirming() ? '?' : '×'}
+    </button>
+  )
+}
+
+interface FolderDeleteButtonProps {
+  label: string
+  onConfirm: () => void
+}
+
+const FolderDeleteButton: Component<FolderDeleteButtonProps> = (props) => {
+  const [confirming, setConfirming] = createSignal(false)
+
+  function handleClick(e: MouseEvent) {
+    e.stopPropagation()
+    if (confirming()) {
+      props.onConfirm()
+    } else {
+      setConfirming(true)
+    }
+  }
+
+  return (
+    <button
+      class={`folder-delete${confirming() ? ' confirming' : ''}`}
+      title={confirming() ? 'Click again to confirm' : `Delete folder "${props.label}"`}
+      onClick={handleClick}
+      onMouseLeave={() => setConfirming(false)}
+    >
+      {confirming() ? '?' : '×'}
+    </button>
   )
 }
 

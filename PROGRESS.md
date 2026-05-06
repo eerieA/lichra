@@ -124,6 +124,44 @@ src/styles.css     — sidebar styles, missing wikilink style, mermaid styles
 
 ---
 
-## Phase 3 — PWA
+## Phase 3 — Polish ✅
 
-**Status:** Not started — see `PLAN.md`
+**Status:** Complete
+
+### What was built
+
+#### Typography / readability
+- Preview uses Georgia serif font with graduated heading sizes (h1–h4)
+- Code blocks have a border and distinct background; inline code styled separately
+- Added `hr`, `li` spacing, and full table styles (with alternating row shading)
+- Preview max-width capped at 720px for comfortable reading line length
+
+#### UX: inline delete confirmation
+- Removed `confirm()` dialogs for note and folder deletion
+- Two-click pattern: first click turns the `×` button red and shows `?`; second click confirms; mouse-leave cancels
+
+#### UX: duplicate title warning
+- While renaming a note, an inline warning appears below the input if the draft title matches an existing note (case-insensitive)
+- Non-blocking — the rename still saves; the warning just makes the wikilink ambiguity visible
+
+#### UX: search → tree navigation
+- Double-clicking a search result clears the query and calls `navigateToNote`, expanding ancestor folders and scrolling to the note in the tree view
+
+### Notes
+- `Ctrl+N` shortcut was implemented then reverted — conflicts with Firefox's native new-window shortcut
+
+### Modified files
+
+```
+src/App.tsx               — removed Ctrl+N wiring
+src/styles.css            — preview typography, table, hr, delete confirmation styles
+src/sidebar/Sidebar.tsx   — double-click search result to reveal in tree
+src/sidebar/FolderTree.tsx — inline delete confirmation, duplicate title warning
+```
+
+### Phase 3 done criteria met
+
+- [x] No regressions in editor latency or link navigation
+- [x] No new features added — only existing UX improved
+- [x] Duplicate title warning shown inline during rename
+- [x] Search results navigable back to tree view via double-click

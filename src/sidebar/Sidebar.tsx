@@ -120,6 +120,11 @@ const Sidebar: Component<Props> = (props) => {
               <div
                 class={`note-item${props.store.currentId() === note.id ? ' active' : ''}`}
                 onClick={() => props.store.setCurrentId(note.id)}
+                onDblClick={() => {
+                  setQuery('')
+                  navigateToNote(note.id)
+                }}
+                title="Double-click to reveal in folder tree"
               >
                 <span class="note-title">{note.title}</span>
                 <span class="note-folder-badge">{folderBadge(note.folderId)}</span>
