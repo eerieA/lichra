@@ -147,15 +147,23 @@ src/styles.css     — sidebar styles, missing wikilink style, mermaid styles
 #### UX: search → tree navigation
 - Double-clicking a search result clears the query and calls `navigateToNote`, expanding ancestor folders and scrolling to the note in the tree view
 
+#### UX: editor breadcrumb
+- A breadcrumb bar above the editor shows the current note's folder path and title (e.g. `/folder1/folder3/` + `test5`)
+- At root it shows `/` + title; updates reactively on note switch
+
+#### UX: sidebar expansion on reload
+- On app load, the sidebar now automatically expands ancestor folders and scrolls to the active note
+- Reuses `navigateToNote` called once in `onMount` — no new logic
+
 ### Notes
 - `Ctrl+N` shortcut was implemented then reverted — conflicts with Firefox's native new-window shortcut
 
 ### Modified files
 
 ```
-src/App.tsx               — removed Ctrl+N wiring
-src/styles.css            — preview typography, table, hr, delete confirmation styles
-src/sidebar/Sidebar.tsx   — double-click search result to reveal in tree
+src/App.tsx                — editor breadcrumb, editor-pane wrapper
+src/styles.css             — preview typography, table, hr, delete confirmation styles, breadcrumb styles
+src/sidebar/Sidebar.tsx    — double-click search result to reveal in tree, expand on load
 src/sidebar/FolderTree.tsx — inline delete confirmation, duplicate title warning
 ```
 
@@ -165,3 +173,5 @@ src/sidebar/FolderTree.tsx — inline delete confirmation, duplicate title warni
 - [x] No new features added — only existing UX improved
 - [x] Duplicate title warning shown inline during rename
 - [x] Search results navigable back to tree view via double-click
+- [x] Editor breadcrumb shows current note location
+- [x] Sidebar expands to active note on app reload

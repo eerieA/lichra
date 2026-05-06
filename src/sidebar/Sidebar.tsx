@@ -69,8 +69,12 @@ const Sidebar: Component<Props> = (props) => {
     }, 0)
   }
 
-  // Register with App so wikilink clicks can call navigateToNote
-  onMount(() => props.onRegisterNavigate(navigateToNote))
+  onMount(() => {
+    props.onRegisterNavigate(navigateToNote)
+    // Expand and scroll to the active note on initial load
+    const id = props.store.currentId()
+    if (id) navigateToNote(id)
+  })
 
   function handleToggleFolder(folderId: string | null) {
     if (folderId === null) return
