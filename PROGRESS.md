@@ -175,3 +175,73 @@ src/sidebar/FolderTree.tsx — inline delete confirmation, duplicate title warni
 - [x] Search results navigable back to tree view via double-click
 - [x] Editor breadcrumb shows current note location
 - [x] Sidebar expands to active note on app reload
+
+---
+
+## Phase 4 — Desktop (Tauri) ✅
+
+**Status:** Complete
+
+### What was built
+
+#### Tauri scaffold
+- `src-tauri/` generated with Tauri 2 (`tauri-cli 2.10.0`)
+- Plugins registered: `tauri-plugin-fs`, `tauri-plugin-dialog`, `tauri-plugin-store`
+- Capabilities grant full filesystem read/write scope for the user-chosen vault directory
+- Window size set to 1280×800; app identifier `dev.lichra.app`
+- `vite.config.ts` updated with `strictPort: true` and Tauri-compatible build target
+- `package.json` gets a `tauri` script (`cargo tauri dev` / `cargo tauri build`)
+
+#### Tauri StorageAdapter (`src/lib/storage-tauri.ts`)
+- Implements the same `StorageAdapter` interface — no changes to app logic
+- On first launch: opens a folder picker (`tauri-plugin-dialog`); chosen vault path persisted via `tauri-plugin-store`
+- Notes saved as real `.md` files with YAML frontmatter (`id`, `title`, `updatedAt`) — Markdown remains the sole source of truth
+- Folder hierarchy mirrored as real subdirectories on disk
+- Vault metadata (folder UUIDs, note path registry) stored in `<vault>/_lichra.json`
+- Rename tracking: when a note is renamed, the old `.md` file is removed and a new one written; path registry updated in `_lichra.json`
+- `loadAll()` recursively scans the vault, parsing frontmatter from each `.md` file
+
+#### Adapter selection (`src/App.tsx`)
+- Detects `__TAURI_INTERNALS__` at runtime; dynamically imports `TauriStorageAdapter` in Tauri, falls back to `IndexedDBAdapter` in the browser
+- Both modes remain fully functional with zero shared-code changes
+
+#### Bug fixes
+- Duplicate folder creation on Enter+blur: `commitNewFolder` now clears state before creating, so the blur no-ops
+- Duplicate sibling folder names: blocked with an inline warning ("A folder with this name already exists here"); input stays open for correction
+
+### New files
+
+```
+src-tauri/                  — full Tauri project scaffold
+src/lib/storage-tauri.ts    — Tauri filesystem StorageAdapter
+```
+
+### Modified files
+
+```
+src/App.tsx               — runtime adapter selection
+src/sidebar/Sidebar.tsx   — duplicate folder name guard + warning
+src/styles.css            — new-folder-warning style
+vite.config.ts            — Tauri-compatible server config
+package.json              — tauri script, Tauri JS dependencies
+```
+
+### Phase 4 done criteria met
+
+- [x] Notes saved as real `.md` files on disk with YAML frontmatter
+- [x] Folder hierarchy mirrored as real subdirectories
+- [x] Vault folder chosen on first launch, persisted across restarts
+- [x] Browser version (IndexedDB) continues to work unchanged
+- [x] StorageAdapter interface unchanged — future adapters (cloud, server) slot in identically
+- [x] No regressions in editor latency or note persistence
+
+---
+
+## v1 Complete ✅
+
+All four phases shipped. The app is a functional local-first Markdown workspace with:
+- Zero-lag editing with live preview and Mermaid diagrams
+- Wikilinks with O(1) resolution across folders
+- Full folder tree with inline rename, delete confirmation, and duplicate guards
+- Notes persisted as real `.md` files on disk (Tauri) or IndexedDB (browser)
+- Clean `StorageAdapter` abstraction ready for cloud/server adapters in v2
