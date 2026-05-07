@@ -10,8 +10,16 @@ import type { Note } from './lib/storage'
 const DEBOUNCE_MS = 75
 const LARGE_NOTE_THRESHOLD = 50_000
 
+const isTauri = () => '__TAURI_INTERNALS__' in window
+
 async function initStore() {
-  const adapter = await createIndexedDBAdapter()
+  let adapter
+  if (isTauri()) {
+    const { createTauriAdapter } = await import('./lib/storage-tauri')
+    adapter = await createTauriAdapter()
+  } else {
+    adapter = await createIndexedDBAdapter()
+  }
   const store = createNotesStore(adapter)
   await store.load()
   return store

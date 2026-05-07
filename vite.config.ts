@@ -3,4 +3,12 @@ import solidPlugin from 'vite-plugin-solid'
 
 export default defineConfig({
   plugins: [solidPlugin()],
+  clearScreen: false,
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
+  build: {
+    target: 'chrome105',
+  },
 })

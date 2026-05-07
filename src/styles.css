@@ -251,6 +251,13 @@ body {
   outline: none;
 }
 
+.new-folder-warning {
+  display: block;
+  font-size: 0.72rem;
+  color: #c8a040;
+  padding: 0.15rem 0.1rem 0;
+}
+
 .search-results {
   flex: 1;
   overflow-y: auto;

@@ -1,4 +1,4 @@
-import { Component, createSignal, For, onMount, Show } from 'solid-js'
+import { Component, createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { NotesStore } from '../lib/notes'
 import FolderTree from './FolderTree'
 
@@ -23,6 +23,14 @@ const Sidebar: Component<Props> = (props) => {
   const [selectedFolderId, setSelectedFolderId] = createSignal<string | null>(null)
   const [newFolder, setNewFolder] = createSignal(false)
   const [folderDraft, setFolderDraft] = createSignal('')
+
+  const isDuplicateFolderName = createMemo(() => {
+    const name = folderDraft().trim().toLowerCase()
+    if (!name) return false
+    return props.store.folders.some(
+      (f) => f.parentId === selectedFolderId() && f.name.toLowerCase() === name
+    )
+  })
   const [openFolderIds, setOpenFolderIds] = createSignal<Set<string>>(new Set())
 
   const noteRefs = new Map<string, HTMLElement>()
@@ -98,12 +106,13 @@ const Sidebar: Component<Props> = (props) => {
 
   function commitNewFolder() {
     const name = folderDraft().trim()
-    if (name) {
-      const folder = props.store.createFolder(name, selectedFolderId())
-      setSelectedFolderId(folder.id)
-      setOpenFolderIds((prev) => new Set([...prev, folder.id]))
-    }
+    if (!name) { setNewFolder(false); return }
+    if (isDuplicateFolderName()) return  // keep input open, warning is shown
+    setFolderDraft('')
     setNewFolder(false)
+    const folder = props.store.createFolder(name, selectedFolderId())
+    setSelectedFolderId(folder.id)
+    setOpenFolderIds((prev) => new Set([...prev, folder.id]))
   }
 
   return (
@@ -170,6 +179,9 @@ const Sidebar: Component<Props> = (props) => {
             }}
             ref={(el) => setTimeout(() => el.focus(), 0)}
           />
+          <Show when={isDuplicateFolderName()}>
+            <span class="new-folder-warning">A folder with this name already exists here</span>
+          </Show>
         </div>
       </Show>
     </div>
