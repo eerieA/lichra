@@ -160,7 +160,7 @@ const NoteItem: Component<NoteItemProps> = (props) => {
             ref={(el) => setTimeout(() => el.focus(), 0)}
           />
           <Show when={isDuplicateTitle()}>
-            <span class="note-rename-warning">Title already exists — wikilinks may be ambiguous</span>
+            <span class="note-rename-warning">A note with this title already exists</span>
           </Show>
         </div>
       </Show>

@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import type { Note, Folder, StorageAdapter } from './storage'
+import { normaliseWikilinks } from './wikilinks'
 
 export type { Note, Folder }
 
@@ -43,8 +44,8 @@ export function createNotesStore(adapter: StorageAdapter) {
   const [childFolders, setChildFolders] = createSignal<ChildFolders>(new Map())
   const [folderNotes, setFolderNotes] = createSignal<FolderNotes>(new Map())
 
-  // Title → note map for wikilink resolution — O(1) lookup
-  const [titleIndex, setTitleIndex] = createSignal<Map<string, Note>>(new Map())
+  // id → note map for wikilink resolution — O(1) lookup, unambiguous across duplicate titles
+  const [idIndex, setIdIndex] = createSignal<Map<string, Note>>(new Map())
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -55,9 +56,9 @@ export function createNotesStore(adapter: StorageAdapter) {
     setChildFolders(cf)
     setFolderNotes(fn)
 
-    const ti = new Map<string, Note>()
-    for (const n of notes) ti.set(n.title.toLowerCase(), n)
-    setTitleIndex(ti)
+    const ii = new Map<string, Note>()
+    for (const n of notes) ii.set(n.id, n)
+    setIdIndex(ii)
   }
 
   function removeNoteFromIndex(note: Note) {
@@ -67,9 +68,9 @@ export function createNotesStore(adapter: StorageAdapter) {
       if (arr) next.set(note.folderId, arr.filter((n) => n.id !== note.id))
       return next
     })
-    setTitleIndex((prev) => {
+    setIdIndex((prev) => {
       const next = new Map(prev)
-      next.delete(note.title.toLowerCase())
+      next.delete(note.id)
       return next
     })
   }
@@ -82,9 +83,9 @@ export function createNotesStore(adapter: StorageAdapter) {
       next.set(note.folderId, arr)
       return next
     })
-    setTitleIndex((prev) => {
+    setIdIndex((prev) => {
       const next = new Map(prev)
-      next.set(note.title.toLowerCase(), note)
+      next.set(note.id, note)
       return next
     })
   }
@@ -114,13 +115,13 @@ export function createNotesStore(adapter: StorageAdapter) {
 
   function withIndexRollback<T>(fn: () => T): T {
     const snapFolderNotes = folderNotes()
-    const snapTitleIndex = titleIndex()
+    const snapTitleIndex = idIndex()
     const snapChildFolders = childFolders()
     try {
       return fn()
     } catch (e) {
       setFolderNotes(snapFolderNotes)
-      setTitleIndex(snapTitleIndex)
+      setIdIndex(snapTitleIndex)
       setChildFolders(snapChildFolders)
       throw e
     }
@@ -241,8 +242,8 @@ export function createNotesStore(adapter: StorageAdapter) {
     await adapter.deleteFolder(id)
   }
 
-  function resolveWikilink(title: string): Note | undefined {
-    return titleIndex().get(title.toLowerCase())
+  function resolveWikilink(id: string): Note | undefined {
+    return idIndex().get(id)
   }
 
   function navigateToNote(id: string) {
@@ -251,11 +252,20 @@ export function createNotesStore(adapter: StorageAdapter) {
 
   async function load() {
     const { notes: loadedNotes, folders: loadedFolders } = await adapter.loadAll()
-    setNotes(loadedNotes)
+    // Build a title index just for migration — maps lowerTitle → Note
+    const titleIndex = new Map(loadedNotes.map((n) => [n.title.toLowerCase(), n]))
+    const migratedNotes = loadedNotes.map((n) => {
+      const migrated = normaliseWikilinks(n.content, titleIndex)
+      if (migrated === n.content) return n
+      const updated = { ...n, content: migrated }
+      adapter.saveNote(updated)
+      return updated
+    })
+    setNotes(migratedNotes)
     setFolders(loadedFolders)
     rebuildIndex()
-    if (loadedNotes.length > 0) {
-      const latest = [...loadedNotes].sort((a, b) => b.updatedAt - a.updatedAt)[0]
+    if (migratedNotes.length > 0) {
+      const latest = [...migratedNotes].sort((a, b) => b.updatedAt - a.updatedAt)[0]
       setCurrentId(latest.id)
     }
   }
