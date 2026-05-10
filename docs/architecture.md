@@ -56,6 +56,10 @@ The app identifier `dev.lichra.app` is set in `src-tauri/tauri.conf.json`. The r
 
 To reset the vault (force the folder picker to reappear on next launch), delete `lichra-prefs.json` or remove the `vaultPath` key from it.
 
+## Known issues & tech debt
+
+See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address before implementing new features.
+
 ## v2 Ideas
 
 **Wikilink robustness** — enforce globally unique titles as a hard constraint, or switch wikilink resolution from title-matching to ID-based with a title alias. Eliminates the current non-determinism when duplicate titles exist.
