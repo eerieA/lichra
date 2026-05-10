@@ -9,7 +9,7 @@ const INDEX_FILE = '_lichra.json'
 
 // ── Frontmatter ────────────────────────────────────────────────────────────
 
-function parseFrontmatter(raw: string): { meta: Record<string, string>; body: string } {
+export function parseFrontmatter(raw: string): { meta: Record<string, string>; body: string } {
   const normalised = raw.replace(/\r\n/g, '\n')
   const match = normalised.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
   if (!match) return { meta: {}, body: raw }
@@ -22,7 +22,7 @@ function parseFrontmatter(raw: string): { meta: Record<string, string>; body: st
   return { meta, body: match[2] }
 }
 
-function serializeFrontmatter(meta: Record<string, string>, body: string): string {
+export function serializeFrontmatter(meta: Record<string, string>, body: string): string {
   const lines = Object.entries(meta).map(([k, v]) => `${k}: ${v}`)
   return `---\n${lines.join('\n')}\n---\n${body}`
 }
@@ -47,12 +47,12 @@ async function getOrPickVaultPath(): Promise<string> {
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
-function buildFolderMap(folders: Folder[]): Map<string, Folder> {
+export function buildFolderMap(folders: Folder[]): Map<string, Folder> {
   return new Map(folders.map((f) => [f.id, f]))
 }
 
 // Maps `parentId` (or '' for root) → (name → Folder), for O(1) path segment lookup
-function buildFolderChildMap(folders: Folder[]): Map<string, Map<string, Folder>> {
+export function buildFolderChildMap(folders: Folder[]): Map<string, Map<string, Folder>> {
   const m = new Map<string, Map<string, Folder>>()
   for (const f of folders) {
     const key = f.parentId ?? ''
@@ -62,7 +62,7 @@ function buildFolderChildMap(folders: Folder[]): Map<string, Map<string, Folder>
   return m
 }
 
-function folderPath(vault: string, folder: Folder, folderMap: Map<string, Folder>): string {
+export function folderPath(vault: string, folder: Folder, folderMap: Map<string, Folder>): string {
   const parts: string[] = []
   let id: string | null = folder.id
   while (id !== null) {
@@ -146,7 +146,7 @@ async function scanDir(
   }
 }
 
-function resolveFolderIdByPath(
+export function resolveFolderIdByPath(
   relPath: string,
   folderChildMap: Map<string, Map<string, Folder>>,
 ): string | null {

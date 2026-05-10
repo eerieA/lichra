@@ -61,11 +61,11 @@ CSP set in `src-tauri/tauri.conf.json`: `default-src 'self'; script-src 'self'; 
 
 ---
 
-### 9. No tests
-Critical paths have no test coverage:
-- Frontmatter parse/serialize round-trip
-- Folder path resolution (deep nesting, renames)
-- In-memory index consistency (add, remove, duplicate titles)
-- Tauri adapter file I/O and external-edit handling
+### ~~9. No tests~~ ✓ Partially addressed
 
-**Fix:** Add a Vitest suite. The storage adapter interface makes it straightforward to test adapters in isolation with a mock filesystem.
+Vitest added (`npm test`). 28 tests across two files covering the highest-value pure logic:
+
+- `src/lib/__tests__/storage-tauri.test.ts` — `parseFrontmatter`, `serializeFrontmatter` (including CRLF and colon-in-value), `buildFolderMap`, `buildFolderChildMap`, `folderPath`, `resolveFolderIdByPath`
+- `src/lib/__tests__/notes.test.ts` — `buildIndex` (placement, sorting, depth, empty cases)
+
+**Deferred:** Tauri adapter I/O tests (require fake filesystem), rename/duplicate-title tests (pending #6 refactor). Manual test plan: `docs/manual-tests.md`.

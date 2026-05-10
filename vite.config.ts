@@ -11,4 +11,7 @@ export default defineConfig({
   build: {
     target: 'chrome105',
   },
+  test: {
+    environment: 'node',
+  },
 })

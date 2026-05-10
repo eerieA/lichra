@@ -11,7 +11,7 @@ export type { Note, Folder }
 type ChildFolders = Map<string | null, Folder[]>
 type FolderNotes  = Map<string | null, Note[]>
 
-function buildIndex(notes: Note[], folders: Folder[]): { childFolders: ChildFolders; folderNotes: FolderNotes } {
+export function buildIndex(notes: Note[], folders: Folder[]): { childFolders: ChildFolders; folderNotes: FolderNotes } {
   const childFolders: ChildFolders = new Map()
   const folderNotes: FolderNotes = new Map()
 
