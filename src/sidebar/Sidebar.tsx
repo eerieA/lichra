@@ -1,10 +1,9 @@
-import { Component, createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { Component, createEffect, createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { NotesStore } from '../lib/notes'
 import FolderTree from './FolderTree'
 
 interface Props {
   store: NotesStore
-  onRegisterNavigate: (fn: (id: string) => void) => void
 }
 
 function getAncestorIds(folderId: string | null, store: NotesStore): string[] {
@@ -78,8 +77,11 @@ const Sidebar: Component<Props> = (props) => {
   }
 
   onMount(() => {
-    props.onRegisterNavigate(navigateToNote)
-    // Expand and scroll to the active note on initial load
+    const id = props.store.currentId()
+    if (id) navigateToNote(id)
+  })
+
+  createEffect(() => {
     const id = props.store.currentId()
     if (id) navigateToNote(id)
   })

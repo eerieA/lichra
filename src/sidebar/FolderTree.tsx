@@ -63,7 +63,7 @@ const FolderNode: Component<NodeProps> = (props) => {
         <span class="folder-caret">{isOpen() ? '▾' : '▸'}</span>
         <span class="folder-name">{props.label}</span>
         <Show when={props.folderId !== null}>
-          <FolderDeleteButton label={props.label} onConfirm={() => props.store.deleteFolder(props.folderId!)} />
+          <ConfirmButton class="folder-delete" confirmTitle={`Delete folder "${props.label}"`} onConfirm={() => props.store.deleteFolder(props.folderId!)} />
         </Show>
       </div>
 
@@ -143,7 +143,7 @@ const NoteItem: Component<NoteItemProps> = (props) => {
         fallback={
           <>
             <span class="note-title">{props.note.title}</span>
-            <NoteDeleteButton title={props.note.title} onConfirm={() => props.store.deleteNote(props.note.id)} />
+            <ConfirmButton class="note-delete" confirmTitle={`Delete "${props.note.title}"`} onConfirm={() => props.store.deleteNote(props.note.id)} />
           </>
         }
       >
@@ -168,11 +168,13 @@ const NoteItem: Component<NoteItemProps> = (props) => {
   )
 }
 
-interface DeleteButtonProps {
+interface ConfirmButtonProps {
+  class: string
+  confirmTitle: string
   onConfirm: () => void
 }
 
-const NoteDeleteButton: Component<DeleteButtonProps & { title: string }> = (props) => {
+const ConfirmButton: Component<ConfirmButtonProps> = (props) => {
   const [confirming, setConfirming] = createSignal(false)
 
   function handleClick(e: MouseEvent) {
@@ -186,37 +188,8 @@ const NoteDeleteButton: Component<DeleteButtonProps & { title: string }> = (prop
 
   return (
     <button
-      class={`note-delete${confirming() ? ' confirming' : ''}`}
-      title={confirming() ? 'Click again to confirm' : `Delete "${props.title}"`}
-      onClick={handleClick}
-      onMouseLeave={() => setConfirming(false)}
-    >
-      {confirming() ? '?' : '×'}
-    </button>
-  )
-}
-
-interface FolderDeleteButtonProps {
-  label: string
-  onConfirm: () => void
-}
-
-const FolderDeleteButton: Component<FolderDeleteButtonProps> = (props) => {
-  const [confirming, setConfirming] = createSignal(false)
-
-  function handleClick(e: MouseEvent) {
-    e.stopPropagation()
-    if (confirming()) {
-      props.onConfirm()
-    } else {
-      setConfirming(true)
-    }
-  }
-
-  return (
-    <button
-      class={`folder-delete${confirming() ? ' confirming' : ''}`}
-      title={confirming() ? 'Click again to confirm' : `Delete folder "${props.label}"`}
+      class={`${props.class}${confirming() ? ' confirming' : ''}`}
+      title={confirming() ? 'Click again to confirm' : props.confirmTitle}
       onClick={handleClick}
       onMouseLeave={() => setConfirming(false)}
     >

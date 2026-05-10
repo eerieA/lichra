@@ -10,7 +10,8 @@ const INDEX_FILE = '_lichra.json'
 // ── Frontmatter ────────────────────────────────────────────────────────────
 
 function parseFrontmatter(raw: string): { meta: Record<string, string>; body: string } {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
+  const normalised = raw.replace(/\r\n/g, '\n')
+  const match = normalised.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
   if (!match) return { meta: {}, body: raw }
   const meta: Record<string, string> = {}
   for (const line of match[1].split('\n')) {

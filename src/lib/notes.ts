@@ -245,6 +245,10 @@ export function createNotesStore(adapter: StorageAdapter) {
     return titleIndex().get(title.toLowerCase())
   }
 
+  function navigateToNote(id: string) {
+    setCurrentId(id)
+  }
+
   async function load() {
     const { notes: loadedNotes, folders: loadedFolders } = await adapter.loadAll()
     setNotes(loadedNotes)
@@ -273,6 +277,7 @@ export function createNotesStore(adapter: StorageAdapter) {
     deleteNote,
     deleteFolder,
     resolveWikilink,
+    navigateToNote,
     load,
   }
 }

@@ -40,9 +40,6 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
   const [html, setHtml] = createSignal('')
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
-  // Sidebar registers its navigateToNote so wikilink clicks can trigger it
-  let sidebarNavigate: ((id: string) => void) | undefined
-
   function scheduleRender(content: string) {
     clearTimeout(debounceTimer)
     const delay = content.length > LARGE_NOTE_THRESHOLD ? 300 : DEBOUNCE_MS
@@ -67,7 +64,7 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
     const target = (e.target as HTMLElement).closest<HTMLElement>('.wikilink')
     if (!target) return
     const found = store.resolveWikilink(target.dataset.note ?? '')
-    if (found) sidebarNavigate?.(found.id)
+    if (found) store.navigateToNote(found.id)
   }
 
   function breadcrumb(): string {
@@ -87,10 +84,7 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
 
   return (
     <div class="workspace">
-      <Sidebar
-        store={store}
-        onRegisterNavigate={(fn) => { sidebarNavigate = fn }}
-      />
+      <Sidebar store={store} />
       <div class="editor-pane">
         <div class="editor-breadcrumb">
           {breadcrumb()}<span class="breadcrumb-title">{store.currentNote()?.title ?? ''}</span>

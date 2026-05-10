@@ -74,4 +74,4 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 
 **Web Worker renderer** — move the markdown-it parsing pipeline off the main thread entirely. Currently rendering is debounced and async enough for v1, but a Worker would eliminate any theoretical jank on very large notes.
 
-**File watcher (Tauri)** — detect external edits to `.md` files and reload the affected note in the editor. Useful when notes are edited by another tool (e.g. VS Code) while Lichra is open.
+**File watcher (Tauri)** — detect external edits to `.md` files and reload the affected note in the editor. Useful when notes are edited by another tool (e.g. VS Code) while Lichra is open. `mergeVaultFromDisk(vault, index)` in `src/lib/storage-tauri.ts` is already exported for this purpose — a file watcher can call it on change events to reconcile new or modified files into the index without any additional logic.

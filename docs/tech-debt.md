@@ -24,24 +24,15 @@ Identified during a pre-v2 architecture audit. Ordered by severity.
 
 ## Medium — worth fixing soon
 
-### 4. Fragile frontmatter parsing
-**File:** `src/lib/storage-tauri.ts:12–22`
+### ~~4. Fragile frontmatter parsing~~ ✓ Fixed
 
-Hand-rolled regex parser. Known failure modes:
-- Doesn't handle `\r\n` line endings (breaks on Windows if files are edited externally)
-- Silently truncates values containing a colon (e.g. `title: foo: bar` → `{ title: "foo" }`)
-- No escaping or multiline value support
-
-**Fix:** Replace with `js-yaml` or a dedicated frontmatter library (e.g. `gray-matter`).
+`parseFrontmatter` now normalises `\r\n` → `\n` before matching, fixing the Windows line-ending failure. The colon-truncation bug reported in the audit was a false positive — `indexOf` + `slice(colon + 1)` already preserved colons in values correctly. The format is intentionally simple (three machine-written string fields), so the hand-rolled parser is sufficient without adding a dependency.
 
 ---
 
-### 5. Back-pointer callback for wikilink navigation
-**File:** `src/App.tsx:92`
+### ~~5. Back-pointer callback for wikilink navigation~~ ✓ Fixed
 
-`onRegisterNavigate` is a side-channel where the parent stores a reference to a child's internal function. This is an anti-pattern in component hierarchies and makes the data flow hard to follow.
-
-**Fix:** Expose a `navigateToNote(id)` action on the store, or use a simple event bus, so Preview can trigger navigation without a back-pointer.
+`navigateToNote(id)` is now a store action (`src/lib/notes.ts`). `Workspace` calls `store.navigateToNote()` directly on wikilink clicks. The `onRegisterNavigate` prop and the `sidebarNavigate` mutable variable are gone. `Sidebar` retains its own `navigateToNote` for the expand-ancestors and scroll-into-view side effects, which are sidebar-local UI concerns.
 
 ---
 
@@ -50,27 +41,23 @@ Hand-rolled regex parser. Known failure modes:
 
 The title index (`Map<lowerTitle, Note>`) lets a later note silently shadow an earlier one with the same lowercase title. The UI warns on rename but does not prevent duplicates. Wikilinks then resolve to whichever note was indexed last.
 
-**Fix:** Either enforce unique titles as a hard constraint (reject duplicates), or switch wikilink resolution to ID-based with title as an alias.
+**Decision:** Switch wikilink storage to ID-based (`[[uuid]]` in raw `.md`), rendering the note title as display text in-app. This is unambiguous and rename-safe. The raw markdown will contain UUIDs, but a future `id → path` map can make links more readable when opened in other editors.
+
+**Deferred until after #9 (tests):** this is a breaking change to existing note content requiring a migration on first launch. A test suite should be in place before that migration is written.
 
 ---
 
 ## Low — tidy-up
 
-### 7. Duplicate delete button components
-**File:** `src/components/FolderTree.tsx:175–226`
+### ~~7. Duplicate delete button components~~ ✓ Fixed
 
-`NoteDeleteButton` and `FolderDeleteButton` implement identical two-click confirmation logic in separate copy-pasted components.
-
-**Fix:** Extract a shared `ConfirmButton` component.
+`NoteDeleteButton` and `FolderDeleteButton` replaced by a single `ConfirmButton` component in `src/sidebar/FolderTree.tsx`. Accepts `class` and `confirmTitle` props to cover both cases.
 
 ---
 
-### 8. No Content Security Policy
-**File:** `src-tauri/tauri.conf.json:23` (`"csp": null`)
+### ~~8. No Content Security Policy~~ ✓ Fixed
 
-Low risk for a local-only app, but a missing CSP becomes a real concern if note sharing or sync is added (Mermaid SVGs accept user-provided content).
-
-**Fix:** Set a restrictive CSP now: `"default-src 'self'; script-src 'self'"`.
+CSP set in `src-tauri/tauri.conf.json`: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:`. `unsafe-inline` for styles is required by Mermaid SVG rendering and `markdown-it` inline styles. Scripts are locked to `'self'`.
 
 ---
 
