@@ -46,11 +46,26 @@ async function getOrPickVaultPath(): Promise<string> {
 
 // ── Path helpers ───────────────────────────────────────────────────────────
 
-function folderPath(vault: string, folder: Folder, allFolders: Folder[]): string {
+function buildFolderMap(folders: Folder[]): Map<string, Folder> {
+  return new Map(folders.map((f) => [f.id, f]))
+}
+
+// Maps `parentId` (or '' for root) → (name → Folder), for O(1) path segment lookup
+function buildFolderChildMap(folders: Folder[]): Map<string, Map<string, Folder>> {
+  const m = new Map<string, Map<string, Folder>>()
+  for (const f of folders) {
+    const key = f.parentId ?? ''
+    if (!m.has(key)) m.set(key, new Map())
+    m.get(key)!.set(f.name, f)
+  }
+  return m
+}
+
+function folderPath(vault: string, folder: Folder, folderMap: Map<string, Folder>): string {
   const parts: string[] = []
   let id: string | null = folder.id
   while (id !== null) {
-    const f = allFolders.find((x) => x.id === id)
+    const f = folderMap.get(id)
     if (!f) break
     parts.unshift(f.name)
     id = f.parentId
@@ -58,11 +73,11 @@ function folderPath(vault: string, folder: Folder, allFolders: Folder[]): string
   return [vault, ...parts].join('/')
 }
 
-function noteDiskPath(vault: string, note: Note, allFolders: Folder[]): string {
+function noteDiskPath(vault: string, note: Note, folderMap: Map<string, Folder>): string {
   if (note.folderId === null) return `${vault}/${sanitizeFilename(note.title)}.md`
-  const folder = allFolders.find((f) => f.id === note.folderId)
+  const folder = folderMap.get(note.folderId)
   if (!folder) return `${vault}/${sanitizeFilename(note.title)}.md`
-  const dir = folderPath(vault, folder, allFolders)
+  const dir = folderPath(vault, folder, folderMap)
   return `${dir}/${sanitizeFilename(note.title)}.md`
 }
 
@@ -97,14 +112,15 @@ async function writeIndex(vault: string, index: VaultIndex): Promise<void> {
 
 async function scanNotes(vault: string, folders: Folder[]): Promise<Note[]> {
   const notes: Note[] = []
-  await scanDir(vault, vault, folders, notes)
+  const folderChildMap = buildFolderChildMap(folders)
+  await scanDir(vault, vault, folderChildMap, notes)
   return notes
 }
 
 async function scanDir(
   vault: string,
   dir: string,
-  folders: Folder[],
+  folderChildMap: Map<string, Map<string, Folder>>,
   acc: Note[],
 ): Promise<void> {
   const entries = await readDir(dir)
@@ -112,12 +128,12 @@ async function scanDir(
     if (entry.name === INDEX_FILE) continue
     const fullPath = `${dir}/${entry.name}`
     if (entry.isDirectory) {
-      await scanDir(vault, fullPath, folders, acc)
+      await scanDir(vault, fullPath, folderChildMap, acc)
     } else if (entry.name.endsWith('.md')) {
       const raw = await readTextFile(fullPath)
       const { meta, body } = parseFrontmatter(raw)
       const relDir = dir === vault ? null : dir.slice(vault.length + 1)
-      const folderId = relDir ? resolveFolderIdByPath(relDir, folders) : null
+      const folderId = relDir ? resolveFolderIdByPath(relDir, folderChildMap) : null
       acc.push({
         id: meta.id ?? crypto.randomUUID(),
         title: meta.title ?? entry.name.replace(/\.md$/, ''),
@@ -129,15 +145,36 @@ async function scanDir(
   }
 }
 
-function resolveFolderIdByPath(relPath: string, folders: Folder[]): string | null {
+function resolveFolderIdByPath(
+  relPath: string,
+  folderChildMap: Map<string, Map<string, Folder>>,
+): string | null {
   const parts = relPath.split('/')
   let parentId: string | null = null
   for (const part of parts) {
-    const match = folders.find((f) => f.name === part && f.parentId === parentId)
+    const match: Folder | undefined = folderChildMap.get(parentId ?? '')?.get(part)
     if (!match) return null
     parentId = match.id
   }
   return parentId
+}
+
+// ── Merge vault from disk ──────────────────────────────────────────────────
+// Scans the vault for .md files and registers any note whose id is not yet
+// tracked in index.notePaths. Called on load so external edits are picked up.
+// Safe to call again later (e.g. from a file watcher).
+
+export async function mergeVaultFromDisk(vault: string, index: VaultIndex): Promise<void> {
+  const scanned = await scanNotes(vault, index.folders)
+  let dirty = false
+  for (const note of scanned) {
+    if (!index.notePaths[note.id]) {
+      const folderMap = buildFolderMap(index.folders)
+      index.notePaths[note.id] = noteDiskPath(vault, note, folderMap).slice(vault.length + 1)
+      dirty = true
+    }
+  }
+  if (dirty) await writeIndex(vault, index)
 }
 
 // ── Adapter ────────────────────────────────────────────────────────────────
@@ -147,11 +184,13 @@ export async function createTauriAdapter(): Promise<StorageAdapter & { vaultPath
   await mkdir(vault, { recursive: true })
 
   let index = await readIndex(vault)
+  await mergeVaultFromDisk(vault, index)
 
   // Ensure all folder directories exist on disk
   async function ensureFolderDirs(): Promise<void> {
+    const folderMap = buildFolderMap(index.folders)
     for (const folder of index.folders) {
-      const dir = folderPath(vault, folder, index.folders)
+      const dir = folderPath(vault, folder, folderMap)
       await mkdir(dir, { recursive: true })
     }
   }
@@ -162,12 +201,13 @@ export async function createTauriAdapter(): Promise<StorageAdapter & { vaultPath
 
     async loadAll() {
       index = await readIndex(vault)
+      await mergeVaultFromDisk(vault, index)
       const notes = await scanNotes(vault, index.folders)
       return { notes, folders: index.folders }
     },
 
     async saveNote(note: Note) {
-      const path = noteDiskPath(vault, note, index.folders)
+      const path = noteDiskPath(vault, note, buildFolderMap(index.folders))
       const dir = path.slice(0, path.lastIndexOf('/'))
       await mkdir(dir, { recursive: true })
 
@@ -202,9 +242,10 @@ export async function createTauriAdapter(): Promise<StorageAdapter & { vaultPath
       const existing = index.folders.find((f) => f.id === folder.id)
       if (existing) {
         // Rename: move directory on disk
-        const oldPath = folderPath(vault, existing, index.folders)
+        const oldMap = buildFolderMap(index.folders)
+        const oldPath = folderPath(vault, existing, oldMap)
         index.folders = index.folders.map((f) => (f.id === folder.id ? folder : f))
-        const newPath = folderPath(vault, folder, index.folders)
+        const newPath = folderPath(vault, folder, buildFolderMap(index.folders))
         if (oldPath !== newPath && (await exists(oldPath))) {
           await mkdir(newPath.slice(0, newPath.lastIndexOf('/')), { recursive: true })
           // tauri-plugin-fs rename
@@ -213,7 +254,7 @@ export async function createTauriAdapter(): Promise<StorageAdapter & { vaultPath
         }
       } else {
         index.folders.push(folder)
-        const dir = folderPath(vault, folder, index.folders)
+        const dir = folderPath(vault, folder, buildFolderMap(index.folders))
         await mkdir(dir, { recursive: true })
       }
       await writeIndex(vault, index)
@@ -222,7 +263,7 @@ export async function createTauriAdapter(): Promise<StorageAdapter & { vaultPath
     async deleteFolder(id: string) {
       const folder = index.folders.find((f) => f.id === id)
       if (folder) {
-        const dir = folderPath(vault, folder, index.folders)
+        const dir = folderPath(vault, folder, buildFolderMap(index.folders))
         if (await exists(dir)) await remove(dir, { recursive: true })
       }
       index.folders = index.folders.filter((f) => f.id !== id)

@@ -109,6 +109,23 @@ export function createNotesStore(adapter: StorageAdapter) {
     })
   }
 
+  // ── Index rollback ───────────────────────────────────────────────────────
+  // Snapshots the index signals before fn(), restores them if fn() throws.
+
+  function withIndexRollback<T>(fn: () => T): T {
+    const snapFolderNotes = folderNotes()
+    const snapTitleIndex = titleIndex()
+    const snapChildFolders = childFolders()
+    try {
+      return fn()
+    } catch (e) {
+      setFolderNotes(snapFolderNotes)
+      setTitleIndex(snapTitleIndex)
+      setChildFolders(snapChildFolders)
+      throw e
+    }
+  }
+
   // ── Public API ───────────────────────────────────────────────────────────
 
   function currentNote(): Note | undefined {
@@ -158,40 +175,46 @@ export function createNotesStore(adapter: StorageAdapter) {
   function updateContent(id: string, content: string) {
     const existing = notes.find((n) => n.id === id)
     if (!existing) return
-    removeNoteFromIndex({ ...existing })
-    setNotes(
-      (n) => n.id === id,
-      produce((n) => { n.content = content; n.updatedAt = Date.now() })
-    )
-    const updated = notes.find((n) => n.id === id)!
-    addNoteToIndex({ ...updated })
-    scheduleSave({ ...updated })
+    withIndexRollback(() => {
+      removeNoteFromIndex({ ...existing })
+      setNotes(
+        (n) => n.id === id,
+        produce((n) => { n.content = content; n.updatedAt = Date.now() })
+      )
+      const updated = notes.find((n) => n.id === id)!
+      addNoteToIndex({ ...updated })
+      scheduleSave({ ...updated })
+    })
   }
 
   function renameNote(id: string, title: string) {
     const existing = notes.find((n) => n.id === id)
     if (!existing) return
-    removeNoteFromIndex({ ...existing })
-    setNotes(
-      (n) => n.id === id,
-      produce((n) => { n.title = title; n.updatedAt = Date.now() })
-    )
-    const updated = notes.find((n) => n.id === id)!
-    addNoteToIndex({ ...updated })
-    adapter.saveNote({ ...updated })
+    withIndexRollback(() => {
+      removeNoteFromIndex({ ...existing })
+      setNotes(
+        (n) => n.id === id,
+        produce((n) => { n.title = title; n.updatedAt = Date.now() })
+      )
+      const updated = notes.find((n) => n.id === id)!
+      addNoteToIndex({ ...updated })
+      adapter.saveNote({ ...updated })
+    })
   }
 
   function renameFolder(id: string, name: string) {
     const existing = folders.find((f) => f.id === id)
     if (!existing) return
-    removeFolderFromIndex({ ...existing })
-    setFolders(
-      (f) => f.id === id,
-      produce((f) => { f.name = name })
-    )
-    const updated = folders.find((f) => f.id === id)!
-    addFolderToIndex({ ...updated })
-    adapter.saveFolder({ ...updated })
+    withIndexRollback(() => {
+      removeFolderFromIndex({ ...existing })
+      setFolders(
+        (f) => f.id === id,
+        produce((f) => { f.name = name })
+      )
+      const updated = folders.find((f) => f.id === id)!
+      addFolderToIndex({ ...updated })
+      adapter.saveFolder({ ...updated })
+    })
   }
 
   async function deleteNote(id: string) {

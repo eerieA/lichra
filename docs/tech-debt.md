@@ -4,30 +4,21 @@ Identified during a pre-v2 architecture audit. Ordered by severity.
 
 ## High — fix before new features
 
-### 1. O(n²) folder path resolution
-**File:** `src/lib/storage-tauri.ts:49–59`
+### ~~1. O(n²) folder path resolution~~ ✓ Fixed
 
-`folderPath()` walks the ancestor chain with `allFolders.find()` on every step, and is called on every note and folder save. Degrades badly with many folders.
-
-**Fix:** Build a `Map<id, Folder>` once at load time and pass it down instead of the raw array.
+`folderPath()` and `resolveFolderIdByPath()` now use pre-built maps (`Map<id, Folder>` and `Map<parentId, Map<name, Folder>>`) instead of `Array.find()` on every step.
 
 ---
 
-### 2. Index can drift from disk
-**File:** `src/lib/storage-tauri.ts:163–167`
+### ~~2. Index can drift from disk~~ ✓ Fixed
 
-On load, the app reads `_lichra.json` then scans the vault. If the user edits files externally (another editor, terminal), the index goes stale. On the next folder rename, external notes can be orphaned or duplicated.
-
-**Fix:** After reading the index, scan disk and merge any untracked notes into the index before returning.
+`mergeVaultFromDisk(vault, index)` now runs on every `loadAll()` call. It scans the vault for `.md` files and registers any note ID not already tracked in `notePaths`, then writes the index if anything changed. The function is exported so a future file watcher can call it without duplication.
 
 ---
 
-### 3. Race condition in state updates
-**File:** `src/lib/notes.ts:158–169`
+### ~~3. Race condition in state updates~~ ✓ Fixed
 
-`updateContent` removes a note from the in-memory index, mutates the store, then re-adds the note. If the mutation throws between remove and re-add, the index is permanently corrupted until page reload. Same pattern exists in other mutators.
-
-**Fix:** Rollback the index removal on error, or update the index only after a confirmed successful store mutation.
+`withIndexRollback(fn)` in `notes.ts` snapshots all three index signals before calling `fn`, and restores them if `fn` throws. Applied to `updateContent`, `renameNote`, and `renameFolder` — the three mutators that followed the remove→mutate→re-add pattern.
 
 ---
 
