@@ -1,5 +1,14 @@
 # Lichra — Architecture & Developer Notes
 
+## Running tests
+
+```
+npm test           # run once
+npm run test:watch # watch mode
+```
+
+Tests live in `src/lib/__tests__/`. See `docs/manual-tests.md` for the manual test plan.
+
 ## Tech stack
 
 | Concern | Choice |
@@ -60,9 +69,15 @@ To reset the vault (force the folder picker to reappear on next launch), delete 
 
 See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address before implementing new features.
 
+## v1.5 Ideas
+
+**Rich editor component** — replace the plain `<textarea>` in `src/editor/Editor.tsx` with CodeMirror (or ProseMirror). Immediate wins: proper undo/redo, syntax highlighting, better keyboard handling. This is also the prerequisite for wikilink autocomplete (see v2). CodeMirror is the pragmatic choice — lighter integration, good Markdown support, and the `[[` trigger pattern is well-supported via its autocomplete extension.
+
+**Wikilink `[[` autocomplete picker** — once the rich editor is in place, detect `[[` as a trigger and show a filtered dropdown of note titles. Selecting a note inserts `[[uuid]]` directly, so the user authors links by name but the file stores IDs. This eliminates the current authoring gap where a manually typed `[[Title]]` only resolves after the next app restart (via `normaliseWikilinks`). Until this is implemented, `normaliseWikilinks` remains the fallback for links written in external editors.
+
 ## v2 Ideas
 
-**Wikilink robustness** — enforce globally unique titles as a hard constraint, or switch wikilink resolution from title-matching to ID-based with a title alias. Eliminates the current non-determinism when duplicate titles exist.
+**Wikilink robustness** — ID-based resolution is already in place (wikilinks store `[[uuid]]`, render as note title). The remaining gap is authoring UX, addressed in v1.5 above.
 
 **Full-text search** — current search is title-only. v2 could index note content for body search, scoped to the current folder or global.
 
