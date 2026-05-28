@@ -292,15 +292,33 @@ body {
 
 .editor {
   flex: 1;
-  padding: 1.5rem;
+  overflow-y: auto;
   background: #1e1e1e;
-  color: #e0e0e0;
+}
+
+.editor .cm-editor {
+  height: 100%;
+  background: #1e1e1e;
+}
+
+.editor .cm-scroller {
+  padding: 1.5rem;
   font-family: 'Menlo', 'Consolas', monospace;
   font-size: 0.95rem;
   line-height: 1.7;
-  border: none;
-  resize: none;
+}
+
+.editor .cm-content {
+  background: #1e1e1e;
+  caret-color: #e0e0e0;
+}
+
+.editor .cm-focused {
   outline: none;
+}
+
+.editor .cm-gutters {
+  display: none;
 }
 
 /* ── Preview ── */

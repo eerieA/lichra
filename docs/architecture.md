@@ -77,6 +77,10 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 
 ## v2 Ideas
 
+**Config to change vault (Tauri)** — for the desktop mode, provide UI to change previously selected vault folder to another one.
+
+**Multi-file tabs** — to support multiple notes open simultaneously, keep a `Map<noteId, EditorState>` and swap `view.setState(savedState)` on tab switch rather than dispatching a full document replacement. This preserves per-file undo/redo history, cursor position, and scroll offset. The change is isolated to `src/editor/Editor.tsx` and `src/App.tsx` (tab state) plus a new tab UI; storage, preview, and wikilinks are unaffected.
+
 **Wikilink robustness** — ID-based resolution is already in place (wikilinks store `[[uuid]]`, render as note title). The remaining gap is authoring UX, addressed in v1.5 above.
 
 **Full-text search** — current search is title-only. v2 could index note content for body search, scoped to the current folder or global.
