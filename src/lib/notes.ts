@@ -175,7 +175,7 @@ export function createNotesStore(adapter: StorageAdapter) {
 
   function updateContent(id: string, content: string) {
     const existing = notes.find((n) => n.id === id)
-    if (!existing) return
+    if (!existing || content === existing.content) return
     withIndexRollback(() => {
       removeNoteFromIndex({ ...existing })
       setNotes(
