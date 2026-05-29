@@ -46,17 +46,3 @@ Replace the single shared `EditorView` with a per-note `EditorState` model. This
 
 **Verify:** editing a note in VS Code while Lichra is open reloads it; switching vault reloads all notes from the new path.
 
----
-
-## v3 — Search & Discovery (brief)
-
-- **Full-text search** — extend the existing title search to index note body content. Likely an in-memory index built at load time, queried on keystroke.
-- **Web Worker renderer** — move the `markdown-it` parsing pipeline into a Worker to eliminate any jank on large notes. Pairs naturally with a full-text indexing Worker.
-
----
-
-## v4 — Cloud & Collaboration (brief)
-
-- **Cloud storage adapter** — implement `StorageAdapter` backed by a cloud API (e.g. Google Drive, S3). The interface is already designed for this; the app core needs no changes.
-- **Hosted service** — deploy as a web service on a VPS or platform like Render. A `ServerStorageAdapter` reads/writes files behind an HTTP API. Multi-user isolation and auth are the main additions.
-- **Cross-device sync** — follows naturally once a cloud or server adapter exists.

@@ -89,7 +89,7 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
         <div class="editor-breadcrumb">
           {breadcrumb()}<span class="breadcrumb-title">{store.currentNote()?.title ?? ''}</span>
         </div>
-        <Editor value={store.currentNote()?.content ?? ''} onInput={handleInput} notes={store.notes as Note[]} />
+        <Editor note={store.currentNote()} onInput={handleInput} notes={store.notes as Note[]} />
       </div>
       <Preview html={html()} onClick={handlePreviewClick} />
     </div>

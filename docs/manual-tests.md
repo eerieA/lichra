@@ -16,32 +16,61 @@ Run these in the Tauri desktop app after any significant change. Browser mode sh
 - Delete a folder that contains notes and subfolders. Verify the entire subtree is removed from disk.
 - Confirm the two-click confirmation is required for both note and folder deletion.
 
-## 3. Wikilink navigation — shallow to deep
+## 3. Note rename
 
-- Create `test1.md` at the vault root containing `[[test5]]`.
-- Create `test5.md` at `folder1/folder2/folder3/folder4/folder5/`.
-- Open `test1.md` and click the wikilink to `test5`.
-- **Expected:** editor and preview switch to `test5`; sidebar expands all ancestor folders and scrolls `test5` into view.
+- Rename a note. Verify the sidebar title updates, the `.md` file on disk is renamed, and any wikilinks pointing to it still resolve (they store UUID, so they should be unaffected).
+- Rename a note to a title that already exists. Verify the duplicate-title warning is shown.
 
-## 4. Wikilink navigation — deep to shallow
+## 4. Editor basics
 
-- From `test5.md` at the deep path above, add `[[test1]]` and click it.
-- **Expected:** editor and preview switch to `test1`; sidebar collapses back and focuses `test1` at the root.
+- Open a note and verify Markdown syntax highlighting is visible (headings, bold, code spans, fenced code blocks).
+- Verify long lines wrap rather than overflow horizontally.
+- Type several words, press Ctrl+Z — verify undo works within the note.
+- Press Ctrl+Y (or Ctrl+Shift+Z) — verify redo works.
 
-## 5. Search result navigation
+## 5. Wikilink `[[` autocomplete
 
-- Use the search bar to find a note at a deep path (e.g. `test5`).
-- Single-click: editor switches to the note but sidebar does not expand yet.
-- Double-click the result: sidebar should expand all ancestor folders, scroll the note into view, and clear the search query.
+- Open any note and type `[[`. Verify the autocomplete picker appears immediately.
+- Type a few characters to filter — verify the list narrows to matching note titles.
+- Select a note from the picker (Enter or click). Verify the inserted text is `[[uuid]]` (not `[[Title]]`) and the preview immediately renders it as a blue wikilink with the note's display title.
+- Press Escape while the picker is open — verify it dismisses without inserting anything.
+- Type `[[` inside a fenced code block (` ``` ` ... ` ``` `). Verify the picker does **not** appear. *(Known gap — not yet implemented; expect picker to appear.)*
 
-## 6. Wikilink to current note (edge case)
+## 6. Wikilink navigation — shallow to deep
 
-- Open a note that contains a wikilink pointing to itself (e.g. `[[test1]]` inside `test1.md`).
-- Click the wikilink.
+- Create `Note A` at the vault root. Open it and use the `[[` picker to insert a link to `Note B`.
+- Create `Note B` at `folder1/folder2/`.
+- In the preview of `Note A`, click the wikilink to `Note B`.
+- **Expected:** editor and preview switch to `Note B`; sidebar expands all ancestor folders and scrolls `Note B` into view.
+
+## 7. Wikilink navigation — deep to shallow
+
+- From `Note B` at the deep path above, use the `[[` picker to insert a link to `Note A` and click it in the preview.
+- **Expected:** editor and preview switch to `Note A`; sidebar collapses back and focuses `Note A` at the root.
+
+## 8. Wikilink to current note (edge case)
+
+- Open a note and use the `[[` picker to insert a link pointing to itself.
+- Click the wikilink in the preview.
 - **Expected:** no visible flash, scroll jump, or duplicate expand animation. The note stays open cleanly.
 
-## 7. Browser mode smoke test
+## 9. Sidebar note ordering
+
+- Open the vault with several notes. Note the order of notes in the sidebar (most recently edited first).
+- Click a note to make it active without editing it.
+- **Expected:** the sidebar order does not change. The clicked note does not jump to the top.
+
+## 10. Per-note undo/redo history
+
+- Open note A. Type "hello" then "world" (two distinct edits).
+- Switch to note B. Type "foo".
+- Press Ctrl+Z in note B — "foo" should be undone. Note A is unaffected.
+- Switch back to note A — content and cursor position should be exactly as left.
+- Press Ctrl+Z in note A — "world" should be undone. Note B is unaffected.
+- Switch to note B and back to note A again — undo history in A should still be intact (pressing Ctrl+Z again undoes "hello").
+
+## 11. Browser mode smoke test
 
 - Run `npm run dev` and open in browser.
 - Create folders and notes, verify they persist across page reload (IndexedDB).
-- Confirm wikilinks, search, and delete all work as in desktop mode.
+- Confirm wikilinks, autocomplete, search, and delete all work as in desktop mode.
