@@ -1,83 +1,62 @@
-# Lichra v1.5 Implementation Plan
+# Lichra Implementation Plan
 
-## Overview
+## v1.5 — Rich Editor (completed)
 
-Two features, one dependency chain: CodeMirror replaces the textarea (Phase 1), then the `[[` autocomplete picker sits on top (Phase 2). The `Editor` component's two-prop interface (`value`, `onInput`) stays unchanged from `App.tsx`'s perspective for Phase 1.
-
----
-
-## Phase 1 — CodeMirror Editor
-
-**Install:**
-```
-npm install @codemirror/view @codemirror/state @codemirror/commands \
-            @codemirror/lang-markdown @codemirror/language-data \
-            @codemirror/theme-one-dark
-```
-
-**`src/editor/Editor.tsx` — full rewrite (only file that changes in Phase 1):**
-- Mount an `EditorView` into a `<div>` using SolidJS `onMount` / `onCleanup`
-- Controlled value sync via `createEffect` with a string-equality guard to avoid loops when the external signal updates
-- `updateListener` extension calls `props.onInput(doc.toString())` on every change
-- Extensions: `markdown()` + `history()` + `defaultKeymap` + `historyKeymap` + `EditorView.lineWrapping` + `oneDark`
-
-**`src/styles.css`** — override `oneDark`'s `#282c34` background to `#1e1e1e` via `.cm-editor` / `.cm-content` selectors to avoid a colour seam.
-
-**Verify:** undo/redo works, note switching clears history, syntax highlighting visible, save path still functions.
+- Replaced `<textarea>` with CodeMirror in `src/editor/Editor.tsx`
+- Added `[[` autocomplete picker inserting `[[uuid]]` directly via `src/editor/wikilinkCompletion.ts`
+- Fixed spurious `updateContent` calls on note switch (equality guard)
+- Fixed note-switch transactions leaking into undo history (`Transaction.addToHistory: false`)
 
 ---
 
-## Phase 2 — `[[` Autocomplete Picker
+## v2 — Editor Experience
 
-**Install:**
-```
-npm install @codemirror/autocomplete
-```
+All changes are frontend-only. No storage, backend, or data model changes required.
 
-**New file: `src/editor/wikilinkCompletion.ts`**
-- Exports `wikilinkCompletionSource(notes: Note[]): CompletionSource`
-- Detects `[[` trigger with `context.matchBefore(/\[\[[^\]]*/)` 
-- Filters note titles by query substring
-- `apply` inserts `[[uuid]]` (not `[[title]]`) — this eliminates the authoring gap
+### Phase 1 — Multi-file tabs
 
-**`src/editor/Editor.tsx`** — add `notes: Note[]` prop; use a `Compartment` to reconfigure the autocomplete extension reactively when the note list changes.
+Replace the single shared `EditorView` with a per-note `EditorState` model. This fixes the undo history leak (see `docs/tech-debt.md`) and enables multiple notes open simultaneously.
 
-**`src/App.tsx`** — pass `notes={store.notes}` to `<Editor>`.
+**Approach:**
+- Keep a `Map<noteId, EditorState>` in `Editor.tsx`
+- On note switch, call `view.setState(savedState)` instead of dispatching a full document replacement — history, cursor, and scroll are preserved per note
+- Create a fresh `EditorState` (with all extensions) the first time a note is opened; reuse on subsequent switches
+- Remove the `createEffect` that syncs `props.value` into the editor — note switching is now handled entirely by `setState`, not by a reactive dispatch
+- The `updateListener` extension still calls `props.onInput` on every keystroke as before
 
-**New test: `src/lib/__tests__/wikilinkCompletion.test.ts`** — the completion source is a pure function; test: null when not in `[[`, filters by substring, inserts UUID not title, correct UUID when titles share a prefix.
+**Files changed:** `src/editor/Editor.tsx`, `src/App.tsx` (tab state + tab UI)
 
-**Verify:** picker opens on `[[`, filters live, Enter inserts `[[uuid]]`, link renders immediately in preview without restart.
+**Verify:** undo in note A does not affect note B; switching notes preserves cursor position; existing save path unchanged.
 
----
+### Phase 2 — Wikilink polish
 
-## Sequencing
+- Suppress the `[[` autocomplete picker when the cursor is inside a fenced code block (use `syntaxTree` from `@codemirror/language` to check the cursor's syntax node)
 
-```
-Phase 1 (CodeMirror swap)
-  └─ Phase 2 (autocomplete)
-       └─ wikilinkCompletion.ts test can be written in parallel with Phase 1
-```
+**Files changed:** `src/editor/wikilinkCompletion.ts`
 
----
+**Verify:** typing `[[` inside a code block does not open the picker; typing `[[` outside a code block still does.
 
-## Risks
+### Phase 3 — Tauri desktop improvements
 
-| Risk | Mitigation |
-|------|-----------|
-| Controlled-value loop during rapid note switching | String-equality guard in `createEffect`; also check editor focus if needed |
-| `oneDark` background mismatch | Override `.cm-editor` / `.cm-content` in `styles.css` |
-| Autocomplete dropdown clipped in Tauri WebView | Test picker near bottom of editor pane on macOS |
-| `Compartment` reconfigure on every keystroke (title index changes) | Cheap operation — confirm no flicker; optimise later if needed |
-| Picker triggers inside code blocks | Acceptable for v1.5; `syntaxTree` check is a follow-up |
+**Config to change vault** — add a settings screen (or menu item) that calls the Tauri folder picker and updates `vaultPath` in `lichra-prefs.json`. On confirmation, reload the store from the new vault.
+
+**File watcher** — use Tauri's `@tauri-apps/plugin-fs` watch API to listen for changes to `.md` files in the vault. On change, call the already-exported `mergeVaultFromDisk(vault, index)` in `src/lib/storage-tauri.ts` to reconcile the updated file into the index.
+
+**Files changed:** `src/lib/storage-tauri.ts`, `src-tauri/tauri.conf.json` (plugin permissions), new settings UI component.
+
+**Verify:** editing a note in VS Code while Lichra is open reloads it; switching vault reloads all notes from the new path.
 
 ---
 
-## Critical Files
+## v3 — Search & Discovery (brief)
 
-| File | Change |
-|------|--------|
-| `src/editor/Editor.tsx` | Full rewrite (Phase 1 + Phase 2 extension wiring) |
-| `src/editor/wikilinkCompletion.ts` | New — core completion source logic (Phase 2) |
-| `src/App.tsx` | Add `notes` prop pass-through to `<Editor>` |
-| `src/styles.css` | CodeMirror theme overrides |
-| `src/lib/__tests__/wikilinkCompletion.test.ts` | New — unit tests for completion source |
+- **Full-text search** — extend the existing title search to index note body content. Likely an in-memory index built at load time, queried on keystroke.
+- **Web Worker renderer** — move the `markdown-it` parsing pipeline into a Worker to eliminate any jank on large notes. Pairs naturally with a full-text indexing Worker.
+
+---
+
+## v4 — Cloud & Collaboration (brief)
+
+- **Cloud storage adapter** — implement `StorageAdapter` backed by a cloud API (e.g. Google Drive, S3). The interface is already designed for this; the app core needs no changes.
+- **Hosted service** — deploy as a web service on a VPS or platform like Render. A `ServerStorageAdapter` reads/writes files behind an HTTP API. Multi-user isolation and auth are the main additions.
+- **Cross-device sync** — follows naturally once a cloud or server adapter exists.
