@@ -26,9 +26,8 @@ export function buildIndex(notes: Note[], folders: Folder[]): { childFolders: Ch
     folderNotes.get(n.folderId)!.push(n)
   }
 
-  // Sort folder children alphabetically, notes by updatedAt desc
   for (const arr of childFolders.values()) arr.sort((a, b) => a.name.localeCompare(b.name))
-  for (const arr of folderNotes.values()) arr.sort((a, b) => b.updatedAt - a.updatedAt)
+  for (const arr of folderNotes.values()) arr.sort((a, b) => a.title.localeCompare(b.title))
 
   return { childFolders, folderNotes }
 }
@@ -79,7 +78,8 @@ export function createNotesStore(adapter: StorageAdapter) {
     setFolderNotes((prev) => {
       const next = new Map(prev)
       const arr = (next.get(note.folderId) ?? []).filter((n) => n.id !== note.id)
-      arr.unshift(note) // most recent first
+      arr.push(note)
+      arr.sort((a, b) => a.title.localeCompare(b.title))
       next.set(note.folderId, arr)
       return next
     })

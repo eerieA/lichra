@@ -35,7 +35,7 @@ describe('buildIndex', () => {
     expect(childFolders.get('p')?.map((f) => f.id)).toContain('c')
   })
 
-  it('sorts notes by updatedAt descending', () => {
+  it('sorts notes alphabetically by title', () => {
     const notes = [
       note('n1', 'Old', null, 100),
       note('n2', 'New', null, 200),
@@ -43,7 +43,7 @@ describe('buildIndex', () => {
     ]
     const { folderNotes } = buildIndex(notes, [])
     const ids = folderNotes.get(null)!.map((n) => n.id)
-    expect(ids).toEqual(['n2', 'n3', 'n1'])
+    expect(ids).toEqual(['n3', 'n2', 'n1'])
   })
 
   it('sorts folders alphabetically', () => {
