@@ -56,9 +56,9 @@ Run these in the Tauri desktop app after any significant change. Browser mode sh
 
 ## 9. Sidebar note ordering
 
-- Open the vault with several notes. Note the order of notes in the sidebar (most recently edited first).
-- Click a note to make it active without editing it.
-- **Expected:** the sidebar order does not change. The clicked note does not jump to the top.
+- Open the vault with several notes. Verify notes within each folder are ordered alphabetically by title.
+- Edit a note (type a few characters). **Expected:** the note does not move in the sidebar.
+- Undo the edit (Ctrl+Z). **Expected:** the note still does not move.
 
 ## 10. Per-note undo/redo history
 
@@ -69,7 +69,22 @@ Run these in the Tauri desktop app after any significant change. Browser mode sh
 - Press Ctrl+Z in note A — "world" should be undone. Note B is unaffected.
 - Switch to note B and back to note A again — undo history in A should still be intact (pressing Ctrl+Z again undoes "hello").
 
-## 11. Browser mode smoke test
+## 11. Tab strip
+
+- With no tabs open, verify the tab strip is not visible.
+- Right-click a note in the sidebar. Verify the context menu appears with an "Open in tab" item.
+- Click outside the context menu (or press Escape). Verify it dismisses without opening a tab.
+- Right-click the same note and select "Open in tab". Verify the tab strip appears with one tab, the note is navigated to, and the tab is highlighted as active.
+- Right-click a second note and select "Open in tab". Verify a second tab appears and navigation switches to that note.
+- Click the first tab. Verify the editor switches to that note and the tab is highlighted as active.
+- With two tabs open, single-click a third note in the sidebar (do not use the context menu). Verify no new tab is added and the tab strip still shows only the original two tabs.
+- Verify the breadcrumb shows a `⊕` marker for the third note (since it is active but not a tab).
+- Click the `⊕` marker. Verify the third note is now added to the tab strip.
+- Close the active tab using its `×` button. Verify the editor switches to the nearest remaining tab and that tab becomes active.
+- Close all remaining tabs one by one. Verify the tab strip disappears when the last tab is closed.
+- With no tabs open, verify the `⊕` marker is not shown in the breadcrumb even when browsing notes.
+
+## 12. Browser mode smoke test
 
 - Run `npm run dev` and open in browser.
 - Create folders and notes, verify they persist across page reload (IndexedDB).

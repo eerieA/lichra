@@ -113,3 +113,9 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 
 **Floating read-only reference panel** — a draggable overlay panel showing the read-only preview of a chosen note. Summoned via a keyboard shortcut, dismissed the same way or via a close button. The user picks which note to display via a small search input inside the panel. Intended for writers who need to reference a character sheet, world-building doc, or spec while actively editing another note. Implemented as a positioned `<div>` over the workspace containing the existing `Preview` component — independent of the pane split layout.
 
+## v8 — Light Theme & Theming
+
+**Light theme** — add a light colour scheme as an alternative to the current dark theme. Controlled by a toggle in settings, persisted in `lichra-prefs.json`. Implemented via CSS custom properties (`--color-bg`, `--color-text`, etc.) replacing all hardcoded colour values throughout `src/styles.css`.
+
+**Pre-requisite:** before implementing, migrate SVG icon imports from `<img src={url}>` to inline SolidJS components using `vite-plugin-solid-svg` — this restores `currentColor` support so icons respond to CSS theme variables. See `docs/tech-debt.md` for the migration details.
+

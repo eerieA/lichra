@@ -14,6 +14,7 @@
 | 8 | No Content Security Policy | CSP set in `src-tauri/tauri.conf.json`; scripts locked to `'self'` |
 | 9 | No tests | Vitest added; 38 tests across `storage-tauri`, `notes`, and `wikilinks` modules |
 | 10 | Wikilink authoring gap | `[[` autocomplete picker inserted in CodeMirror editor inserts `[[uuid]]` directly, resolving immediately without an app restart |
+| 11 | Undo history shared across notes | Per-note `Map<noteId, EditorState>` in `Editor.tsx` — history, cursor, and scroll scoped per note |
 
 ## Open
 
@@ -35,9 +36,9 @@ The adapter's file I/O operations (`saveNote`, `saveFolder`, `deleteNote`, `dele
 
 ---
 
-### Undo history is per editor instance, not per note
-**File:** `src/editor/Editor.tsx`
+### SVG icons use `<img>` — no `currentColor` support
+**File:** `src/App.tsx`, `src/assets/icons/`
 
-There is a single `EditorView` instance whose undo/redo stack is shared across all notes. Typing in note A, switching to note B, then pressing Ctrl+Z will undo the edit made in note A but apply it to note B's content. This also causes note B to re-sort to the top of the sidebar (via `updatedAt` update).
+SVG icons are imported as asset URLs and rendered via `<img>`, which cannot inherit CSS `currentColor`. Currently worked around with a fixed fill colour in the SVG and opacity transitions in CSS. This breaks when a light theme is added — a light-coloured icon is invisible on a light background.
 
-**Deferred until:** the tab model is implemented. The clean fix is to keep a `Map<noteId, EditorState>` and swap states on navigation — history, cursor, and scroll are all scoped to the `EditorState` and come along for free. See `docs/architecture.md` — v2 Ideas (Multi-file tabs).
+**Planned fix:** install `vite-plugin-solid-svg` and import SVG files as SolidJS components instead. This renders them as inline SVG DOM, so `fill="currentColor"` works and the icon colour is fully controlled by CSS. Change the import style from `import pinIcon from './assets/icons/pin.svg'` to `import PinIcon from './assets/icons/pin.svg?component-solid'` and render `<PinIcon />` instead of `<img src={pinIcon} />`. Do this before implementing the light theme.
