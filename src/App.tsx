@@ -117,6 +117,9 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
         </Show>
         <div class="editor-breadcrumb">
           {breadcrumb()}<span class="breadcrumb-title">{store.currentNote()?.title ?? ''}</span>
+          <Show when={openTabIds().length > 0 && store.currentId() !== null && !openTabIds().includes(store.currentId()!)}>
+            <button class="breadcrumb-pin" title="Not opened as a tab — click to open" onClick={() => openTab(store.currentId()!)}>⊕</button>
+          </Show>
         </div>
         <Editor note={store.currentNote()} onInput={handleInput} notes={store.notes as Note[]} />
       </div>
