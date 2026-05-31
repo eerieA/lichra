@@ -99,13 +99,11 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 
 **Cross-device sync** — once a cloud or server adapter exists, sync follows naturally from pointing multiple clients at the same backend.
 
-## v5 — WYSIWYG Toggle + Tab Strip
+## v5 — WYSIWYG Toggle
 
 **WYSIWYG toggle (v1)** — replace the side-by-side editor/preview layout with a single pane that renders Markdown inline using CodeMirror's decoration API (headings, bold, italic, links rendered visually; raw syntax hidden). A toggle switches to raw Markdown mode. Scope for v1: headings, bold, italic, inline code, links. Tables and fenced code blocks remain as raw Markdown with syntax highlighting.
 
 **WYSIWYG toggle (v2, future)** — add explicit trigger strings for the remaining constructs. For example, typing `---` at the end of a table row and pressing Enter triggers an inline table render for the current session; on next file open the table renders automatically. Consistent with the `[[` wikilink pattern.
-
-**Tab strip** — a tab bar above the editor pane showing all open notes. Allows switching between open notes without touching the sidebar. Built on top of the v2 per-note `EditorState` cache already in place.
 
 ## v6 — Multi-pane Split
 
