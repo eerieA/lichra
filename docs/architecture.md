@@ -98,3 +98,20 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 **Hosted service** — deploy as a web service on a VPS or platform like Render. A `ServerStorageAdapter` reads/writes files on the server filesystem or object store behind an HTTP API. Multi-user isolation and auth are the main additions.
 
 **Cross-device sync** — once a cloud or server adapter exists, sync follows naturally from pointing multiple clients at the same backend.
+
+## v5 — WYSIWYG Toggle + Tab Strip
+
+**WYSIWYG toggle (v1)** — replace the side-by-side editor/preview layout with a single pane that renders Markdown inline using CodeMirror's decoration API (headings, bold, italic, links rendered visually; raw syntax hidden). A toggle switches to raw Markdown mode. Scope for v1: headings, bold, italic, inline code, links. Tables and fenced code blocks remain as raw Markdown with syntax highlighting.
+
+**WYSIWYG toggle (v2, future)** — add explicit trigger strings for the remaining constructs. For example, typing `---` at the end of a table row and pressing Enter triggers an inline table render for the current session; on next file open the table renders automatically. Consistent with the `[[` wikilink pattern.
+
+**Tab strip** — a tab bar above the editor pane showing all open notes. Allows switching between open notes without touching the sidebar. Built on top of the v2 per-note `EditorState` cache already in place.
+
+## v6 — Multi-pane Split
+
+**Up to 4 file panes** — with WYSIWYG in place (each pane is one column), the workspace can be split into 2–4 panes. Each pane independently hosts an open note with its own editor state, history, and WYSIWYG/raw toggle. Focus management (which pane receives keyboard input and sidebar navigation) is the main design challenge.
+
+## v7 — Floating Reference Panel
+
+**Floating read-only reference panel** — a draggable overlay panel showing the read-only preview of a chosen note. Summoned via a keyboard shortcut, dismissed the same way or via a close button. The user picks which note to display via a small search input inside the panel. Intended for writers who need to reference a character sheet, world-building doc, or spec while actively editing another note. Implemented as a positioned `<div>` over the workspace containing the existing `Preview` component — independent of the pane split layout.
+
