@@ -112,9 +112,15 @@ interface NoteItemProps {
   noteRefs: Map<string, HTMLElement>
 }
 
+interface ContextMenuState {
+  x: number
+  y: number
+}
+
 const NoteItem: Component<NoteItemProps> = (props) => {
   const [editing, setEditing] = createSignal(false)
   const [draft, setDraft] = createSignal('')
+  const [contextMenu, setContextMenu] = createSignal<ContextMenuState | null>(null)
 
   const isActive = () => props.store.currentId() === props.note.id
 
@@ -137,12 +143,23 @@ const NoteItem: Component<NoteItemProps> = (props) => {
     setEditing(false)
   }
 
+  function openContextMenu(e: MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({ x: e.clientX, y: e.clientY })
+  }
+
+  function closeContextMenu() {
+    setContextMenu(null)
+  }
+
   return (
     <div
       class={`note-item${isActive() ? ' active' : ''}`}
       ref={(el) => props.noteRefs.set(props.note.id, el)}
       onClick={() => props.onNavigate(props.note.id)}
       onDblClick={startRename}
+      onContextMenu={openContextMenu}
     >
       <Show
         when={editing()}
@@ -170,7 +187,44 @@ const NoteItem: Component<NoteItemProps> = (props) => {
           </Show>
         </div>
       </Show>
+
+      <Show when={contextMenu()}>
+        {(menu) => (
+          <NoteContextMenu
+            x={menu().x}
+            y={menu().y}
+            onOpenTab={() => { props.onOpenTab(props.note.id); closeContextMenu() }}
+            onClose={closeContextMenu}
+          />
+        )}
+      </Show>
     </div>
+  )
+}
+
+interface NoteContextMenuProps {
+  x: number
+  y: number
+  onOpenTab: () => void
+  onClose: () => void
+}
+
+const NoteContextMenu: Component<NoteContextMenuProps> = (props) => {
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape') props.onClose()
+  }
+
+  return (
+    <>
+      <div class="context-menu-backdrop" onClick={props.onClose} />
+      <div
+        class="context-menu"
+        style={{ left: `${props.x}px`, top: `${props.y}px` }}
+        onKeyDown={handleKeyDown}
+      >
+        <button class="context-menu-item" onClick={props.onOpenTab}>Open in tab</button>
+      </div>
+    </>
   )
 }
 

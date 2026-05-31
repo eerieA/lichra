@@ -264,6 +264,42 @@ body {
   padding: 0.25rem 0;
 }
 
+/* ── Context menu ── */
+
+.context-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 101;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  padding: 0.25rem 0;
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.context-menu-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.75rem;
+  text-align: left;
+}
+
+.context-menu-item:hover {
+  background: #333;
+  color: #e0e0e0;
+}
+
 /* ── Tab strip ── */
 
 .tab-strip {
