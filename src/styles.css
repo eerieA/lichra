@@ -392,17 +392,16 @@ body {
 .breadcrumb-pin {
   background: none;
   border: none;
-  color: #555;
   cursor: pointer;
-  font-size: 0.85rem;
-  line-height: 1;
+  line-height: 0;
   margin-left: 0.5rem;
   padding: 0;
   vertical-align: middle;
+  opacity: 0.4;
 }
 
 .breadcrumb-pin:hover {
-  color: #7cb9e8;
+  opacity: 1;
 }
 
 .editor {

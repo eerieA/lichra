@@ -1,4 +1,5 @@
 import { createResource, createSignal, createEffect, Show } from 'solid-js'
+import pinIcon from './assets/icons/pin.svg'
 import Editor from './editor/Editor'
 import TabStrip from './editor/TabStrip'
 import Preview from './preview/Preview'
@@ -118,7 +119,9 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
         <div class="editor-breadcrumb">
           {breadcrumb()}<span class="breadcrumb-title">{store.currentNote()?.title ?? ''}</span>
           <Show when={openTabIds().length > 0 && store.currentId() !== null && !openTabIds().includes(store.currentId()!)}>
-            <button class="breadcrumb-pin" title="Not opened as a tab — click to open" onClick={() => openTab(store.currentId()!)}>⊕</button>
+            <button class="breadcrumb-pin" title="Not opened as a tab — click to open" onClick={() => openTab(store.currentId()!)}>
+              <img src={pinIcon} width="13" height="13" alt="pin" />
+            </button>
           </Show>
         </div>
         <Editor note={store.currentNote()} onInput={handleInput} notes={store.notes as Note[]} />
