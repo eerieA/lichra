@@ -13,7 +13,7 @@
 
 All changes are frontend-only. No storage, backend, or data model changes required.
 
-### Phase 1 — Multi-file tabs (in progress)
+### Phase 1 — Multi-file tabs (completed)
 
 Replace the single shared `EditorView` with a per-note `EditorState` model. This fixes the undo history leak (see `docs/tech-debt.md`) and enables multiple notes open simultaneously.
 
@@ -24,35 +24,22 @@ Replace the single shared `EditorView` with a per-note `EditorState` model. This
 - Create a fresh `EditorState` (with all extensions) the first time a note is opened; reuse on subsequent switches
 - The `updateListener` extension still calls `props.onInput` on every keystroke as before
 
-**Verify:** undo in note A does not affect note B; switching notes preserves cursor position; existing save path unchanged.
+#### Phase 1b — Tab strip UI (completed)
 
-#### Phase 1b — Tab strip UI
+- `openTabIds` (`string[]`) in `Workspace` (`App.tsx`) is the ordered list of note IDs open as tabs
+- `openTab(id)` adds to `openTabIds` if not already present, then navigates to the note
+- Closing a tab removes it from `openTabIds`; if it was the current note, navigate to the nearest remaining tab (or null)
+- `<TabStrip>` renders above the editor pane; hidden when no tabs are open
+- Breadcrumb shows a clickable `⊕` marker when the current note is not in the tab strip and at least one tab is open — clicking it calls `openTab` for the current note
 
-Add a tab strip above the editor showing explicitly opened notes.
+**Behaviour note:** "Open in tab" on a note other than the current active note adds that note to the tab strip *and* navigates to it immediately. The previously active note is not automatically added as a tab — if it was not already a tab, it becomes a non-tab background note navigable via the sidebar.
 
-**Approach:**
-- Add `openTabIds` (`string[]`) and `setOpenTabIds` to `Workspace` in `App.tsx` — ordered list of note IDs currently open as tabs
-- Expose an `openTab(id)` handler that adds to `openTabIds` if not already present, then navigates
-- Closing a tab removes it from `openTabIds`; if it was the current note, navigate to the nearest remaining tab (or null if none)
-- Render a `<TabStrip>` component above the editor pane, showing one tab per entry in `openTabIds`; active tab highlighted; each tab has a close button
-- Tab strip is hidden when `openTabIds` is empty
+#### Phase 1c — Sidebar context menu (completed)
 
-**Files changed:** `src/App.tsx`, new `src/editor/TabStrip.tsx`
-
-**Verify:** programmatically opening two notes shows both as tabs; closing the active tab switches to the next; tab strip disappears when all tabs are closed.
-
-#### Phase 1c — Sidebar context menu
-
-Add a right-click context menu on note items in the sidebar. First action: "Open in tab". Designed to host future actions (rename, delete, move) without further restructuring.
-
-**Approach:**
-- Right-clicking a note item shows a custom context menu at cursor coordinates; `e.preventDefault()` suppresses any browser default
-- Context menu is a positioned `<div>` rendered via a portal or at app root level, dismissed on click-outside or Escape
-- "Open in tab" calls the `openTab(id)` handler from Phase 1b
-
-**Files changed:** `src/sidebar/FolderTree.tsx`, new `src/sidebar/NoteContextMenu.tsx`
-
-**Verify:** right-clicking a note shows the context menu; selecting "Open in tab" adds it to the tab strip; clicking outside or pressing Escape dismisses the menu; single-click navigation does not open tabs.
+- Right-clicking a note item in the sidebar shows a custom context menu at cursor coordinates; `e.preventDefault()` suppresses the browser default
+- Context menu is dismissed on click-outside or Escape
+- "Open in tab" calls `openTab(id)` — first action; designed to host future actions (rename, delete, move) without restructuring
+- Context menu state is local to `NoteItem` in `src/sidebar/FolderTree.tsx` (no separate file needed)
 
 ### Phase 2 — Wikilink polish
 
