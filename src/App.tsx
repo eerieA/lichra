@@ -1,5 +1,6 @@
 import { createResource, createSignal, createEffect, Show } from 'solid-js'
 import Editor from './editor/Editor'
+import TabStrip from './editor/TabStrip'
 import Preview from './preview/Preview'
 import Sidebar from './sidebar/Sidebar'
 import { renderer } from './lib/markdown'
@@ -38,7 +39,27 @@ export default function App() {
 function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
   const { store } = props
   const [html, setHtml] = createSignal('')
+  const [openTabIds, setOpenTabIds] = createSignal<string[]>([])
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
+
+  function openTab(id: string) {
+    setOpenTabIds((prev) => prev.includes(id) ? prev : [...prev, id])
+    store.setCurrentId(id)
+  }
+
+  function closeTab(id: string) {
+    const tabs = openTabIds()
+    const idx = tabs.indexOf(id)
+    setOpenTabIds(tabs.filter((t) => t !== id))
+    if (store.currentId() === id) {
+      const next = tabs[idx + 1] ?? tabs[idx - 1] ?? null
+      store.setCurrentId(next)
+    }
+  }
+
+  const openTabs = () => openTabIds()
+    .map((id) => (store.notes as Note[]).find((n) => n.id === id))
+    .filter((n): n is Note => n !== undefined)
 
   function scheduleRender(content: string) {
     clearTimeout(debounceTimer)
@@ -84,8 +105,16 @@ function Workspace(props: { store: ReturnType<typeof createNotesStore> }) {
 
   return (
     <div class="workspace">
-      <Sidebar store={store} />
+      <Sidebar store={store} onOpenTab={openTab} />
       <div class="editor-pane">
+        <Show when={openTabs().length > 0}>
+          <TabStrip
+            tabs={openTabs()}
+            currentId={store.currentId()}
+            onSelect={(id) => store.setCurrentId(id)}
+            onClose={closeTab}
+          />
+        </Show>
         <div class="editor-breadcrumb">
           {breadcrumb()}<span class="breadcrumb-title">{store.currentNote()?.title ?? ''}</span>
         </div>

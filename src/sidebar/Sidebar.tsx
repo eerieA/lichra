@@ -4,6 +4,7 @@ import FolderTree from './FolderTree'
 
 interface Props {
   store: NotesStore
+  onOpenTab: (id: string) => void
 }
 
 function getAncestorIds(folderId: string | null, store: NotesStore): string[] {
@@ -18,6 +19,7 @@ function getAncestorIds(folderId: string | null, store: NotesStore): string[] {
 }
 
 const Sidebar: Component<Props> = (props) => {
+  const { onOpenTab } = props
   const [query, setQuery] = createSignal('')
   const [selectedFolderId, setSelectedFolderId] = createSignal<string | null>(null)
   const [newFolder, setNewFolder] = createSignal(false)
@@ -158,6 +160,7 @@ const Sidebar: Component<Props> = (props) => {
             openFolderIds={openFolderIds}
             onToggleFolder={handleToggleFolder}
             onNavigateNote={navigateToNote}
+            onOpenTab={onOpenTab}
             noteRefs={noteRefs}
           />
         </div>

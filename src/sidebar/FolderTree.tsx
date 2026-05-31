@@ -8,6 +8,7 @@ interface Props {
   openFolderIds: () => Set<string>
   onToggleFolder: (id: string | null) => void
   onNavigateNote: (id: string) => void
+  onOpenTab: (id: string) => void
   noteRefs: Map<string, HTMLElement>
 }
 
@@ -24,6 +25,7 @@ const FolderTree: Component<Props> = (props) => {
         openFolderIds={props.openFolderIds}
         onToggleFolder={props.onToggleFolder}
         onNavigateNote={props.onNavigateNote}
+        onOpenTab={props.onOpenTab}
         noteRefs={props.noteRefs}
       />
     </div>
@@ -40,6 +42,7 @@ interface NodeProps {
   openFolderIds: () => Set<string>
   onToggleFolder: (id: string | null) => void
   onNavigateNote: (id: string) => void
+  onOpenTab: (id: string) => void
   noteRefs: Map<string, HTMLElement>
 }
 
@@ -74,6 +77,7 @@ const FolderNode: Component<NodeProps> = (props) => {
               note={note}
               store={props.store}
               onNavigate={props.onNavigateNote}
+              onOpenTab={props.onOpenTab}
               noteRefs={props.noteRefs}
             />
           )}
@@ -90,6 +94,7 @@ const FolderNode: Component<NodeProps> = (props) => {
               openFolderIds={props.openFolderIds}
               onToggleFolder={props.onToggleFolder}
               onNavigateNote={props.onNavigateNote}
+              onOpenTab={props.onOpenTab}
               noteRefs={props.noteRefs}
             />
           )}
@@ -103,6 +108,7 @@ interface NoteItemProps {
   note: Note
   store: NotesStore
   onNavigate: (id: string) => void
+  onOpenTab: (id: string) => void
   noteRefs: Map<string, HTMLElement>
 }
 
