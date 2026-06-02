@@ -109,6 +109,12 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 
 **Up to 4 file panes** — with WYSIWYG in place (each pane is one column), the workspace can be split into 2–4 panes. Each pane independently hosts an open note with its own editor state, history, and WYSIWYG/raw toggle. Focus management (which pane receives keyboard input and sidebar navigation) is the main design challenge.
 
+**Per-pane tab strips** — each pane has its own tab strip. This design was chosen over a global tab strip for two reasons: (1) the same note can be open in multiple panes simultaneously (e.g. editing the "Technology" and "Factions" sections of `world.md` side by side), which a global strip cannot represent since a note can only appear once; (2) a writer may want three or more different notes open across panes, which a split-view-only model cannot handle. Per-pane tabs cover both cases cleanly.
+
+**State model changes from v2:** `openTabIds: string[]` and `currentId: string` in `App.tsx` become `panes: { tabIds: string[], currentId: string }[]`. The `EditorState` cache key in `Editor.tsx` changes from `noteId` to `(paneId, noteId)` — this is what enables the same note open in two panes with independent cursor and scroll positions. The v2 `TabStrip` component is reused, rendered once per pane.
+
+**Tech stack note:** multi-pane is pure frontend — SolidJS layout and signals. Tauri has no involvement unless panes are ever promoted to separate OS windows (not planned). Multiple simultaneous `EditorView` instances are lightweight enough for prose-sized notes; the existing debounce and large-note threshold already handle multiple concurrent preview renders. Performance is not a concern with the current stack.
+
 ## v7 — Floating Reference Panel
 
 **Floating read-only reference panel** — a draggable overlay panel showing the read-only preview of a chosen note. Summoned via a keyboard shortcut, dismissed the same way or via a close button. The user picks which note to display via a small search input inside the panel. Intended for writers who need to reference a character sheet, world-building doc, or spec while actively editing another note. Implemented as a positioned `<div>` over the workspace containing the existing `Preview` component — independent of the pane split layout.
