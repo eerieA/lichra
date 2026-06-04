@@ -105,15 +105,25 @@ See [tech-debt.md](tech-debt.md) for a prioritised list of issues to address bef
 
 **WYSIWYG toggle (v2, future)** — add explicit trigger strings for the remaining constructs. For example, typing `---` at the end of a table row and pressing Enter triggers an inline table render for the current session; on next file open the table renders automatically. Consistent with the `[[` wikilink pattern.
 
-## v6 — Multi-pane Split
+## v6 — Dual-pane Split
 
-**Up to 4 file panes** — with WYSIWYG in place (each pane is one column), the workspace can be split into 2–4 panes. Each pane independently hosts an open note with its own editor state, history, and WYSIWYG/raw toggle. Focus management (which pane receives keyboard input and sidebar navigation) is the main design challenge.
+**Fixed 2-pane layout** — the workspace has two independent panes side by side (center and right columns), each with its own tab strip, breadcrumb, and editor area. The sidebar occupies the left column and is shared. The layout is fixed (CSS grid, no resize handles, no dynamic pane count), which eliminates layout-management overhead for the writer.
 
-**Per-pane tab strips** — each pane has its own tab strip. This design was chosen over a global tab strip for two reasons: (1) the same note can be open in multiple panes simultaneously (e.g. editing the "Technology" and "Factions" sections of `world.md` side by side), which a global strip cannot represent since a note can only appear once; (2) a writer may want three or more different notes open across panes, which a split-view-only model cannot handle. Per-pane tabs cover both cases cleanly.
+**Per-pane tab strips** — each pane has its own tab strip. The same note can be open in both panes simultaneously with independent cursor, scroll, and editor state. Per-pane tabs are preferred over a global strip because a note can only appear once in a global strip, which prevents the same note from being open in two panes at the same time.
 
-**State model changes from v2:** `openTabIds: string[]` and `currentId: string` in `App.tsx` become `panes: { tabIds: string[], currentId: string }[]`. The `EditorState` cache key in `Editor.tsx` changes from `noteId` to `(paneId, noteId)` — this is what enables the same note open in two panes with independent cursor and scroll positions. The v2 `TabStrip` component is reused, rendered once per pane.
+**Intra-pane split view** — within each pane the editor area can be split into two scroll viewports of the active note. This is implemented as two `EditorView` instances sharing one `EditorState` (CodeMirror natively supports this). The split state is per-pane and independent: both panes can be split simultaneously, giving an effective 4-viewport workspace without a 4-pane layout engine.
 
-**Tech stack note:** multi-pane is pure frontend — SolidJS layout and signals. Tauri has no involvement unless panes are ever promoted to separate OS windows (not planned). Multiple simultaneous `EditorView` instances are lightweight enough for prose-sized notes; the existing debounce and large-note threshold already handle multiple concurrent preview renders. Performance is not a concern with the current stack.
+**Document stack panel** — a panel in the bottom-left (below the sidebar folder tree) that surfaces frequently visited files for the current working period. Files can be manually pinned; the panel also auto-populates from recent visit history. Each entry shows which panes the file is currently open in. This is a new data structure: a persisted ordered list of note references with pane-membership metadata, stored alongside the existing prefs.
+
+**Adjustable pane width** — a draggable divider between the two panes lets the user resize them freely. The split ratio is stored as a single CSS grid column fraction, updated via a SolidJS signal on drag and persisted to `lichra-prefs.json` on drag end. Dragging the divider past a minimum width threshold collapses or expands pane 2, unifying the resize and collapse gestures into one affordance.
+
+**Collapse pane 2** — pane 2 can be collapsed to a narrow icon strip (showing the first-letter abbreviation of each open tab). One click expands it back. The layout stays structurally stable (no DOM removal), so open tabs and editor state are preserved while collapsed.
+
+**Focus mode** — a keyboard shortcut hides the sidebar and document stack and expands the pane(s) to full width. A second press restores the layout. Implemented as a CSS class toggle on the root layout element; no state model changes required.
+
+**State model changes from v2:** `openTabIds: string[]` and `currentId: string` in `App.tsx` become `panes: { tabIds: string[], currentId: string, isSplit: boolean, isCollapsed: boolean }[]` (always length 2). The `EditorState` cache key in `Editor.tsx` changes from `noteId` to `(paneId, noteId)` — this enables the same note open in two panes with independent cursor and scroll positions. The v2 `TabStrip` component is reused, rendered once per pane.
+
+**Tech stack note:** dual-pane is pure frontend — SolidJS layout and signals. Tauri has no involvement. Multiple simultaneous `EditorView` instances are lightweight enough for prose-sized notes; the existing debounce and large-note threshold already handle multiple concurrent renders. Performance is not a concern with the current stack.
 
 ## v7 — Floating Reference Panel
 
